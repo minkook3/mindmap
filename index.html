@@ -1699,7 +1699,6 @@ function ghHeaders(extra) {
   if (t) h['Authorization'] = 'token ' + t;
   return h;
 }
-function indexPath() { return ghCfg().mapsDir + '/index.json'; }
 function mapPath(id) { return ghCfg().mapsDir + '/' + id + '.json'; }
 function contentsUrl(path) {
   const c = ghCfg();
@@ -1754,24 +1753,44 @@ async function ghDeleteFile(path, sha, message) {
   if (!res.ok && res.status !== 404) throw new Error('삭제 실패 (' + res.status + ')');
 }
 
-// ── 레지스트리(index.json: 맵 목록) ──
-async function loadRegistry() {
-  const r = await ghGetFile(indexPath());
-  return r ? { list: (r.data.maps || []), sha: r.sha } : { list: [], sha: null };
+// ── 맵 목록 = data/maps 디렉터리 직접 나열 (별도 목차 파일 불필요) ──
+async function listMaps() {
+  const c = ghCfg();
+  const url = contentsUrl(c.mapsDir) + '?ref=' + encodeURIComponent(c.branch) + '&t=' + Date.now();
+  const res = await fetch(url, { headers: ghHeaders(), cache: 'no-store' });
+  if (res.status === 404) return [];
+  if (res.status === 401 || res.status === 403) throw { auth: true, status: res.status };
+  if (!res.ok) throw new Error('목록 읽기 실패 (' + res.status + ')');
+  const arr = await res.json();
+  const files = (Array.isArray(arr) ? arr : []).filter(f =>
+    f.type === 'file' && /\.json$/i.test(f.name) && f.name !== 'index.json');
+  // 각 맵 파일에서 이름·수정시각을 읽어옴(파일 내부에 저장됨)
+  const maps = await Promise.all(files.map(async f => {
+    const id = f.name.replace(/\.json$/i, '');
+    try {
+      const r = await ghGetFile(c.mapsDir + '/' + f.name);
+      const d = (r && r.data) || {};
+      return { id, name: d.name || deriveMapName(d) || id, updatedAt: d.updatedAt || '' };
+    } catch (e) { return { id, name: id, updatedAt: '' }; }
+  }));
+  return maps;
 }
-async function saveRegistry(list) {
-  const cur = await loadRegistry();   // 항상 최신 sha로 갱신(충돌 최소화)
-  return await ghPutFile(indexPath(), { maps: list }, cur.sha, 'chore: update map index');
+
+// 파일 안에 이름이 없으면 루트 노드 텍스트 첫 줄로 이름 추정
+function deriveMapName(d) {
+  try {
+    const ns = d.nodes || [];
+    const root = ns.find(n => !n.parentId) || ns[0];
+    return ((root && root.text) || '').split('\n')[0].trim();
+  } catch (e) { return ''; }
 }
-async function registryUpsert(entry) {
-  const { list } = await loadRegistry();
-  const i = list.findIndex(m => m.id === entry.id);
-  if (i >= 0) list[i] = Object.assign(list[i], entry); else list.push(entry);
-  await saveRegistry(list);
-}
-async function registryRemove(id) {
-  const { list } = await loadRegistry();
-  await saveRegistry(list.filter(m => m.id !== id));
+
+// 저장 페이로드 = 맵 데이터 + 이름 + 수정시각 (목록 표시에 사용)
+function getMapPayload(name) {
+  return Object.assign({}, getMapData(), {
+    name: name != null ? name : (currentMapName || ''),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 // ── 맵 CRUD ──
@@ -1782,9 +1801,8 @@ function genId() {
 
 async function createMap(name) {
   const id = genId();
-  const data = { nodes: [{ id: 'n1', text: name || '중심 주제', x: 0, y: 0, color: '#e94560', parentId: null }], links: [], idCounter: 2 };
+  const data = { nodes: [{ id: 'n1', text: name || '중심 주제', x: 0, y: 0, color: '#e94560', parentId: null }], links: [], idCounter: 2, name: name || '', updatedAt: new Date().toISOString() };
   const sha = await ghPutFile(mapPath(id), data, null, 'feat: create map "' + name + '"');
-  await registryUpsert({ id, name, updatedAt: new Date().toISOString() });
   return { id, sha };
 }
 
@@ -1793,9 +1811,8 @@ async function loadMapById(id) {
   if (!r) throw new Error('맵을 찾을 수 없습니다: ' + id);
   applyMapData(r.data);
   currentMapId = id; currentMapSha = r.sha;
-  // 이름은 레지스트리에서
-  try { const { list } = await loadRegistry(); const e = list.find(m => m.id === id); currentMapName = e ? e.name : id; }
-  catch (e) { currentMapName = id; }
+  // 이름은 맵 파일 안에서(없으면 루트 노드 텍스트, 그것도 없으면 id)
+  currentMapName = r.data.name || deriveMapName(r.data) || id;
   viewX = 0; viewY = 0; viewScale = 1; selectNone();
   mapDirty = false;
   render(); resetHistory();
@@ -1810,9 +1827,8 @@ async function cloudSave() {
   }
   setCloudStatus('dirty', '저장 중…');
   try {
-    const sha = await ghPutFile(mapPath(currentMapId), getMapData(), currentMapSha, 'update map: ' + currentMapName);
+    const sha = await ghPutFile(mapPath(currentMapId), getMapPayload(), currentMapSha, 'update map: ' + currentMapName);
     currentMapSha = sha; mapDirty = false;
-    await registryUpsert({ id: currentMapId, name: currentMapName, updatedAt: new Date().toISOString() });
     setCloudStatus('synced', currentMapName + ' · 저장됨');
     showToast('GitHub에 저장되었습니다');
   } catch (e) {
@@ -1835,8 +1851,11 @@ async function renameMap(id, curName) {
   promptInput('맵 이름 변경', curName, async (name) => {
     if (!name || name === curName) return;
     try {
-      await registryUpsert({ id, name, updatedAt: new Date().toISOString() });
-      if (id === currentMapId) { currentMapName = name; setCloudStatus('synced', name + ' · 동기화됨'); }
+      const r = await ghGetFile(mapPath(id));
+      if (!r) throw new Error('맵을 찾을 수 없습니다');
+      const data = Object.assign({}, r.data, { name, updatedAt: new Date().toISOString() });
+      const newSha = await ghPutFile(mapPath(id), data, r.sha, 'chore: rename map to "' + name + '"');
+      if (id === currentMapId) { currentMapName = name; currentMapSha = newSha; setCloudStatus('synced', name + ' · 동기화됨'); }
       refreshDashboard();
       showToast('이름이 변경되었습니다');
     } catch (e) { handleCloudErr(e); }
@@ -1847,12 +1866,10 @@ async function duplicateMap(id) {
   try {
     const r = await ghGetFile(mapPath(id));
     if (!r) return;
-    const { list } = await loadRegistry();
-    const src = list.find(m => m.id === id);
-    const name = (src ? src.name : '맵') + ' (사본)';
+    const name = ((r.data && (r.data.name || deriveMapName(r.data))) || '맵') + ' (사본)';
     const nid2 = genId();
-    await ghPutFile(mapPath(nid2), r.data, null, 'feat: duplicate map');
-    await registryUpsert({ id: nid2, name, updatedAt: new Date().toISOString() });
+    const data = Object.assign({}, r.data, { name, updatedAt: new Date().toISOString() });
+    await ghPutFile(mapPath(nid2), data, null, 'feat: duplicate map');
     refreshDashboard();
     showToast('복제되었습니다');
   } catch (e) { handleCloudErr(e); }
@@ -1863,7 +1880,6 @@ async function deleteMap(id, name) {
   try {
     const r = await ghGetFile(mapPath(id));
     if (r) await ghDeleteFile(mapPath(id), r.sha, 'chore: delete map "' + name + '"');
-    await registryRemove(id);
     if (id === currentMapId) { currentMapId = null; currentMapSha = null; currentMapName = null; setCloudStatus('', '로컬 작업 중'); }
     refreshDashboard();
     showToast('삭제되었습니다');
@@ -1935,7 +1951,7 @@ async function refreshDashboard() {
   const box = document.getElementById('map-list');
   box.innerHTML = '<div class="map-empty">불러오는 중…</div>';
   try {
-    const { list } = await loadRegistry();
+    const list = await listMaps();
     if (!list.length) { box.innerHTML = '<div class="map-empty">저장된 맵이 없습니다. “새 맵 만들기”로 시작하세요.</div>'; return; }
     list.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
     box.innerHTML = '';
@@ -1981,8 +1997,7 @@ function createMapPrompt(fromCurrent) {
     try {
       if (fromCurrent) {
         const id = genId();
-        const sha = await ghPutFile(mapPath(id), getMapData(), null, 'feat: create map "' + name + '"');
-        await registryUpsert({ id, name, updatedAt: new Date().toISOString() });
+        const sha = await ghPutFile(mapPath(id), getMapPayload(name), null, 'feat: create map "' + name + '"');
         currentMapId = id; currentMapSha = sha; currentMapName = name; mapDirty = false;
         location.hash = 'm=' + id;
         setCloudStatus('synced', name + ' · 저장됨');
