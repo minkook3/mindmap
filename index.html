@@ -243,6 +243,13 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="menuConnect()">
     <span class="menu-icon">🔗</span> <span class="mtext" data-i18n="menu.connect">라인 연결</span>
   </div>
+  <div class="menu-item has-submenu" id="menu-select" onclick="toggleSubmenu(event, this)">
+    <span class="menu-icon">◈</span> <span class="mtext" data-i18n="menu.selectNodes">노드 선택</span> <span class="submenu-arrow">›</span>
+    <div class="submenu" id="select-submenu">
+      <div class="menu-item" onclick="menuSelectChildren()"><span class="menu-icon">⤵</span> <span class="mtext" data-i18n="menu.selChildren">자식 노드</span></div>
+      <div class="menu-item" onclick="menuSelectAll()"><span class="menu-icon">▦</span> <span class="mtext" data-i18n="menu.selAll">모든 노드</span></div>
+    </div>
+  </div>
   <div class="menu-sep"></div>
   <div class="menu-item" onclick="menuEdit()">
     <span class="menu-icon">✎</span> <span class="mtext" data-i18n="menu.editText">텍스트 편집</span>
@@ -518,6 +525,7 @@ Object.assign(I18N.ko, {
   'menu.addChild':'자식 노드 추가','menu.connect':'라인 연결','menu.editText':'텍스트 편집','menu.textColor':'텍스트 색상',
   'menu.shape':'노드 형태','menu.shapeRect':'네모','menu.shapeRound':'둥근 네모','menu.shapeCircle':'원형',
   'menu.nodeColor':'노드 색상','menu.resize':'노드 크기 조정','menu.delete':'삭제',
+  'menu.selectNodes':'노드 선택','menu.selChildren':'자식 노드','menu.selAll':'모든 노드',
   'menu.createNode':'노드 생성','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집'
 });
 Object.assign(I18N.en, {
@@ -525,6 +533,7 @@ Object.assign(I18N.en, {
   'menu.addChild':'Add child node','menu.connect':'Connect line','menu.editText':'Edit text','menu.textColor':'Text color',
   'menu.shape':'Node shape','menu.shapeRect':'Rectangle','menu.shapeRound':'Rounded','menu.shapeCircle':'Circle',
   'menu.nodeColor':'Node color','menu.resize':'Resize nodes','menu.delete':'Delete',
+  'menu.selectNodes':'Select nodes','menu.selChildren':'Child nodes','menu.selAll':'All nodes',
   'menu.createNode':'Create node','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines'
 });
 function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
@@ -591,6 +600,21 @@ function syncPrimary() { selectedId = selectedIds.size ? [...selectedIds][select
 function selectNone() { selectedIds.clear(); selectedId = null; }
 function selectOne(id) { selectedIds = new Set([id]); selectedId = id; }
 function selectToggle(id) { if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); syncPrimary(); }
+// 화살표 방향(부모-자식 + from→to 링크)을 따라 도달 가능한 하위 전부 (순환은 visited로 안전)
+function descendantsOf(id) {
+  const out = new Set([id]), stack = [id];
+  while (stack.length) {
+    const cur = stack.pop();
+    nodes.forEach(n => { if (n.parentId === cur && !out.has(n.id)) { out.add(n.id); stack.push(n.id); } });
+    links.forEach(l => { if (l.from === cur && getNode(l.to) && !out.has(l.to)) { out.add(l.to); stack.push(l.to); } });
+  }
+  return out;
+}
+// 노드 + 그 아래(자식) 전부 선택 → 기존 삭제/이동/색상이 그대로 적용됨
+function selectWithDescendants(id) { selectedIds = descendantsOf(id); syncPrimary(); }
+// 우클릭 "노드 선택" 메뉴
+function menuSelectChildren() { if (contextNodeId) { selectWithDescendants(contextNodeId); render(); } hideAll(); }
+function menuSelectAll() { selectAllNodes(); hideAll(); }
 function selectAllNodes() { selectedIds = new Set(nodes.map(n => n.id)); syncPrimary(); render(); }
 // (모델 A) 선택한 노드만 삭제 — 자식은 함께 지우지 않음.
 // 삭제로 끊긴 부모 참조는 가장 가까운 '살아있는' 조상으로 재연결(없으면 루트로).
@@ -1579,6 +1603,7 @@ function onNodeRightClick(e, id) {
   document.getElementById('menu-delete-sep').style.display = 'block';
   document.getElementById('resize-nodes-check').textContent = resizeNodes ? '☑' : '☐';
   document.getElementById('menu-shape').classList.remove('open');  // 서브메뉴 초기 닫힘
+  document.getElementById('menu-select').classList.remove('open');
 
   const menu = document.getElementById('context-menu');
   // Keep menu inside viewport
@@ -1589,7 +1614,9 @@ function onNodeRightClick(e, id) {
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
   // 오른쪽 공간이 부족하면 형태 서브메뉴를 왼쪽으로 펼침
-  document.getElementById('menu-shape').classList.toggle('submenu-left', x + mw + 150 > window.innerWidth);
+  const flipLeft = x + mw + 150 > window.innerWidth;
+  document.getElementById('menu-shape').classList.toggle('submenu-left', flipLeft);
+  document.getElementById('menu-select').classList.toggle('submenu-left', flipLeft);
   menu.style.display = 'block';
   render();
 }
