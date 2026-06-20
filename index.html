@@ -92,6 +92,14 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   letter-spacing: 0.5px;
 }
 
+#remote-change-banner {
+  position: fixed; top: 56px; right: 16px; background: #118ab2;
+  color: #fff; padding: 8px 16px; border-radius: 20px;
+  font-size: 12px; display: none; z-index: 101; font-weight: bold;
+  cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+#remote-change-banner:hover { background: #0f7a9d; }
+
 #toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
   background: #0f3460; color: #fff; padding: 9px 22px;
@@ -201,6 +209,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 </div>
 
 <div id="readonly-badge">읽기 전용</div>
+<div id="remote-change-banner" onclick="reloadRemoteChange()">🔄 다른 사람이 이 맵을 수정했어요 · 클릭해서 새로고침</div>
 <svg id="canvas"></svg>
 <div id="marquee"></div>
 
@@ -303,16 +312,16 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
     <div class="modal-body">
       <div class="field">
         <label>GitHub 개인 액세스 토큰 (PAT)</label>
-        <input type="password" id="cfg-token" placeholder="ghp_… (저장하려면 필요, repo 권한)">
-        <div class="hint-text">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. 사내 GitHub → Settings → Developer settings → Personal access tokens 에서 <b>repo</b> 권한으로 발급하세요.</div>
+        <input type="password" id="cfg-token" placeholder="github_pat_… (이 레포 Contents 읽기/쓰기)">
+        <div class="hint-text">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.</div>
       </div>
       <div class="field">
         <label>API 주소</label>
-        <input type="text" id="cfg-apiBase" placeholder="https://github.nhnent.com/api/v3">
+        <input type="text" id="cfg-apiBase" placeholder="https://api.github.com">
       </div>
       <div class="field">
         <label>레포 (owner / name)</label>
-        <input type="text" id="cfg-owner" placeholder="minkook" style="width:46%;display:inline-block;margin-right:4%">
+        <input type="text" id="cfg-owner" placeholder="minkook3" style="width:46%;display:inline-block;margin-right:4%">
         <input type="text" id="cfg-repo" placeholder="mindmap" style="width:46%;display:inline-block">
       </div>
       <div class="field">
@@ -345,7 +354,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="pako.min.js"></script>
 <script>
 // ── STATE ──
 let nodes = [];
@@ -588,6 +597,8 @@ window.addEventListener('DOMContentLoaded', () => {
     render(); resetHistory();
     setCloudStatus('', '로컬 작업 중 — “내 맵”에서 클라우드 맵을 여세요');
   }
+
+  startRemotePolling();   // 비동기 협업: 원격 변경 주기적 감지
 });
 
 function initDefault() {
@@ -1666,11 +1677,11 @@ function initColorPicker() {
 }
 
 // ══════════════════════════════════════════════════════════
-//  CLOUD BACKEND — 사내 GitHub 레포를 저장소로 사용
+//  CLOUD BACKEND — GitHub 레포를 저장소로 사용
 // ══════════════════════════════════════════════════════════
 const GH_DEFAULTS = {
-  apiBase: 'https://github.nhnent.com/api/v3',
-  owner: 'minkook',
+  apiBase: 'https://api.github.com',
+  owner: 'minkook3',
   repo: 'mindmap',
   branch: 'main',
   mapsDir: 'data/maps'
@@ -1874,6 +1885,46 @@ function setCloudStatus(cls, text) {
 function markDirty() {
   if (!currentMapId) return;
   if (!mapDirty) { mapDirty = true; setCloudStatus('dirty', (currentMapName || '맵') + ' · 변경됨(미저장)'); }
+}
+
+// ── 원격 변경 감지 (비동기 협업) ──
+let remotePollTimer = null;
+let remoteChangePending = false;
+
+async function checkRemoteChanges() {
+  if (isReadOnly || !currentMapId || !ghToken()) return;
+  if (document.hidden) return;                 // 탭이 숨겨져 있으면 건너뜀
+  try {
+    const r = await ghGetFile(mapPath(currentMapId));
+    if (!r || r.sha === currentMapSha) { hideRemoteBanner(); return; }
+    if (mapDirty) {
+      // 내 미저장 변경이 있으면 덮어쓰지 않고 배너로만 알림
+      remoteChangePending = true;
+      showRemoteBanner();
+    } else {
+      // 미저장 변경이 없으면 조용히 최신본으로 갱신
+      await loadMapById(currentMapId);
+      showToast('다른 사람의 변경이 반영되었습니다');
+    }
+  } catch (e) { /* 폴링 실패는 조용히 무시 */ }
+}
+function showRemoteBanner() {
+  const b = document.getElementById('remote-change-banner');
+  if (b) b.style.display = 'block';
+}
+function hideRemoteBanner() {
+  remoteChangePending = false;
+  const b = document.getElementById('remote-change-banner');
+  if (b) b.style.display = 'none';
+}
+function reloadRemoteChange() {
+  if (mapDirty && !confirm('최신 버전을 불러오면 저장하지 않은 현재 변경 사항은 사라집니다.\n계속할까요?')) return;
+  hideRemoteBanner();
+  loadMapById(currentMapId).then(() => showToast('최신 버전을 불러왔습니다')).catch(e => handleCloudErr(e));
+}
+function startRemotePolling() {
+  if (remotePollTimer) clearInterval(remotePollTimer);
+  remotePollTimer = setInterval(checkRemoteChanges, 15000);   // 15초마다 확인
 }
 
 // ── 대시보드 UI ──
