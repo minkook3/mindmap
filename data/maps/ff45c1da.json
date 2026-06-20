@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "text": "새 마인드맵",
+      "x": 0,
+      "y": 0,
+      "color": "#e94560",
+      "parentId": null
+    }
+  ],
+  "links": [],
+  "idCounter": 2
+}
