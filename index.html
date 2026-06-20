@@ -8,13 +8,24 @@
 body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; user-select: none; }
 
 #toolbar {
-  position: fixed; top: 0; left: 0; right: 0; height: 48px;
+  position: fixed; top: 0; left: 0; right: 0; height: 34px;
   background: #16213e; display: flex; align-items: center;
-  padding: 0 16px; gap: 8px; z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  padding: 0 8px; gap: 4px; z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
 }
-.toolbar-title { color: #e94560; font-weight: bold; font-size: 16px; margin-right: 8px; letter-spacing: 1px; }
-.toolbar-sep { width: 1px; height: 24px; background: #1a4a80; margin: 0 4px; }
+/* 좁은 화면에서 버튼 글씨가 세로로 줄바꿈되지 않게: 줄바꿈 금지 + 폭 축소 금지 */
+#toolbar > * { flex: 0 0 auto; }
+#toolbar button, .toolbar-title, #cloud-status { white-space: nowrap; }
+.lang-toggle { display: flex; gap: 6px; }
+.lang-toggle button { flex: 1; }
+.lang-toggle button.active { background: #e94560; border-color: #c73350; }
+/* 아이콘 전용 툴바 버튼 — 텍스트 없이 간결하게 */
+.icon-btn { padding: 3px 7px; display: inline-flex; align-items: center; justify-content: center; }
+.icon-btn svg { width: 16px; height: 16px; display: block; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.btn-share.icon-btn { color: #fff; }
+.toolbar-title { color: #e94560; font-weight: bold; font-size: 13px; margin-right: 4px; letter-spacing: 0.5px; }
+.toolbar-sep { width: 1px; height: 16px; background: #1a4a80; margin: 0 3px; }
 
 button {
   background: #0f3460; color: #fff; border: 1px solid #1a4a80;
@@ -27,7 +38,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 .btn-share { background: #e94560; border-color: #c73350; margin-left: auto; }
 .btn-share:hover { background: #c73350; }
 
-#canvas { position: fixed; top: 48px; left: 0; right: 0; bottom: 0; width: 100%; height: calc(100% - 48px); display: block;
+#canvas { position: fixed; top: 34px; left: 0; right: 0; bottom: 0; width: 100%; height: calc(100% - 34px); display: block;
   touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
 /* 터치 기기: 메뉴/스와치 터치 타깃 확대(오조작 감소) */
@@ -86,14 +97,14 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 }
 
 #readonly-badge {
-  position: fixed; top: 56px; right: 16px; background: #e94560;
+  position: fixed; top: 42px; right: 16px; background: #e94560;
   color: white; padding: 5px 14px; border-radius: 20px;
   font-size: 12px; display: none; z-index: 100; font-weight: bold;
   letter-spacing: 0.5px;
 }
 
 #remote-change-banner {
-  position: fixed; top: 56px; right: 16px; background: #118ab2;
+  position: fixed; top: 42px; right: 16px; background: #118ab2;
   color: #fff; padding: 8px 16px; border-radius: 20px;
   font-size: 12px; display: none; z-index: 101; font-weight: bold;
   cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.35);
@@ -198,84 +209,96 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 <div id="toolbar">
   <span class="toolbar-title">MindMap</span>
   <div class="toolbar-sep"></div>
-  <button class="btn-cloud" onclick="openDashboard()">📁 내 맵</button>
-  <button class="btn-cloud" onclick="cloudSave()" title="GitHub에 저장 (Ctrl+S)">☁ 저장</button>
-  <button onclick="openSettings()" title="레포·토큰 설정">⚙ 설정</button>
+  <button class="btn-cloud icon-btn" onclick="openDashboard()" data-i18n-title="tb.mapsT" title="내 맵" aria-label="My Maps">
+    <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+  </button>
+  <button class="btn-cloud icon-btn" onclick="cloudSave()" data-i18n-title="tb.saveT" title="GitHub에 저장 (Ctrl+S)" aria-label="Save">
+    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+  </button>
+  <button class="icon-btn" onclick="openSettings()" data-i18n-title="tb.settingsT" title="레포·토큰 설정" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H8a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
   <div class="toolbar-sep"></div>
-  <button id="btn-undo" onclick="undo()" title="실행 취소 (Ctrl+Z)">↶ Undo</button>
-  <button id="btn-redo" onclick="redo()" title="다시 실행 (Ctrl+Y)">↷ Redo</button>
+  <button id="btn-undo" class="icon-btn" onclick="undo()" data-i18n-title="tb.undoT" title="실행 취소 (Ctrl+Z)" aria-label="Undo">
+    <svg viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 1 0 2.1-9.4L3 7"/></svg>
+  </button>
+  <button id="btn-redo" class="icon-btn" onclick="redo()" data-i18n-title="tb.redoT" title="다시 실행 (Ctrl+Y)" aria-label="Redo">
+    <svg viewBox="0 0 24 24"><path d="M21 7v6h-6"/><path d="M20.5 13a9 9 0 1 1-2.1-9.4L21 7"/></svg>
+  </button>
   <span id="cloud-status"><span class="dot"></span><span class="txt">로컬 작업 중</span></span>
-  <button class="btn-share" onclick="shareMap()">🔗 공유 링크 복사</button>
+  <button class="btn-share icon-btn" onclick="shareMap()" data-i18n-title="tb.share" title="🔗 공유 링크 복사" aria-label="Copy share link">
+    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+  </button>
 </div>
 
-<div id="readonly-badge">읽기 전용</div>
-<div id="remote-change-banner" onclick="reloadRemoteChange()">🔄 다른 사람이 이 맵을 수정했어요 · 클릭해서 새로고침</div>
+<div id="readonly-badge" data-i18n="badge.readonly">읽기 전용</div>
+<div id="remote-change-banner" onclick="reloadRemoteChange()" data-i18n="banner.remote">🔄 다른 사람이 이 맵을 수정했어요 · 클릭해서 새로고침</div>
 <svg id="canvas"></svg>
 <div id="marquee"></div>
 
 <div id="context-menu">
   <div class="menu-item" id="menu-add" onclick="menuAddChild()">
-    <span class="menu-icon">＋</span> 자식 노드 추가
+    <span class="menu-icon">＋</span> <span class="mtext" data-i18n="menu.addChild">자식 노드 추가</span>
   </div>
   <div class="menu-item" onclick="menuConnect()">
-    <span class="menu-icon">🔗</span> 라인 연결
+    <span class="menu-icon">🔗</span> <span class="mtext" data-i18n="menu.connect">라인 연결</span>
   </div>
   <div class="menu-sep"></div>
   <div class="menu-item" onclick="menuEdit()">
-    <span class="menu-icon">✎</span> 텍스트 편집
+    <span class="menu-icon">✎</span> <span class="mtext" data-i18n="menu.editText">텍스트 편집</span>
   </div>
   <div class="menu-item" onclick="menuTextColor()">
-    <span class="menu-icon">A</span> 텍스트 색상
+    <span class="menu-icon">A</span> <span class="mtext" data-i18n="menu.textColor">텍스트 색상</span>
   </div>
   <div class="menu-sep"></div>
   <div class="menu-item has-submenu" id="menu-shape" onclick="toggleSubmenu(event, this)">
-    <span class="menu-icon">◇</span> 노드 형태 <span class="submenu-arrow">›</span>
+    <span class="menu-icon">◇</span> <span class="mtext" data-i18n="menu.shape">노드 형태</span> <span class="submenu-arrow">›</span>
     <div class="submenu" id="shape-submenu">
-      <div class="menu-item" onclick="menuShape('rect')"><span class="menu-icon">▭</span> 네모</div>
-      <div class="menu-item" onclick="menuShape('round')"><span class="menu-icon">▢</span> 둥근 네모</div>
-      <div class="menu-item" onclick="menuShape('circle')"><span class="menu-icon">⬤</span> 원형</div>
+      <div class="menu-item" onclick="menuShape('rect')"><span class="menu-icon">▭</span> <span class="mtext" data-i18n="menu.shapeRect">네모</span></div>
+      <div class="menu-item" onclick="menuShape('round')"><span class="menu-icon">▢</span> <span class="mtext" data-i18n="menu.shapeRound">둥근 네모</span></div>
+      <div class="menu-item" onclick="menuShape('circle')"><span class="menu-icon">⬤</span> <span class="mtext" data-i18n="menu.shapeCircle">원형</span></div>
     </div>
   </div>
   <div class="menu-item" onclick="menuColor()">
-    <span class="menu-icon">●</span> 노드 색상
+    <span class="menu-icon">●</span> <span class="mtext" data-i18n="menu.nodeColor">노드 색상</span>
   </div>
   <div class="menu-item" onclick="toggleResizeNodes()">
-    <span class="menu-icon">⤢</span> 노드 크기 조정 <span class="menu-check" id="resize-nodes-check">☐</span>
+    <span class="menu-icon">⤢</span> <span class="mtext" data-i18n="menu.resize">노드 크기 조정</span> <span class="menu-check" id="resize-nodes-check">☐</span>
   </div>
   <div class="menu-sep" id="menu-delete-sep"></div>
   <div class="menu-item danger" id="menu-delete" onclick="menuDelete()">
-    <span class="menu-icon">✕</span> 삭제
+    <span class="menu-icon">✕</span> <span class="mtext" data-i18n="menu.delete">삭제</span>
   </div>
 </div>
 
 <div id="canvas-menu">
   <div class="menu-item" onclick="menuCreateNode()">
-    <span class="menu-icon">＋</span> 노드 생성
+    <span class="menu-icon">＋</span> <span class="mtext" data-i18n="menu.createNode">노드 생성</span>
   </div>
   <div class="menu-sep"></div>
   <div class="menu-item" onclick="menuAllLines('straight')">
-    <span class="menu-icon">─</span> 직선 라인
+    <span class="menu-icon">─</span> <span class="mtext" data-i18n="menu.straightLine">직선 라인</span>
   </div>
   <div class="menu-item" onclick="menuAllLines('custom')">
-    <span class="menu-icon">∿</span> 커스텀 라인
+    <span class="menu-icon">∿</span> <span class="mtext" data-i18n="menu.customLine">커스텀 라인</span>
   </div>
   <div class="menu-item" onclick="toggleEditLines()">
-    <span class="menu-icon">✥</span> 라인 편집 <span class="menu-check" id="canvas-edit-lines-check">☐</span>
+    <span class="menu-icon">✥</span> <span class="mtext" data-i18n="menu.editLines">라인 편집</span> <span class="menu-check" id="canvas-edit-lines-check">☐</span>
   </div>
   <div class="menu-item" onclick="toggleResizeNodes()">
-    <span class="menu-icon">⤢</span> 노드 크기 조정 <span class="menu-check" id="canvas-resize-check">☐</span>
+    <span class="menu-icon">⤢</span> <span class="mtext" data-i18n="menu.resize">노드 크기 조정</span> <span class="menu-check" id="canvas-resize-check">☐</span>
   </div>
 </div>
 
 <div id="line-menu">
   <div class="menu-item" onclick="lineSetType('straight')">
-    <span class="menu-icon">─</span> 직선 라인
+    <span class="menu-icon">─</span> <span class="mtext" data-i18n="menu.straightLine">직선 라인</span>
   </div>
   <div class="menu-item" onclick="lineSetType('custom')">
-    <span class="menu-icon">∿</span> 커스텀 라인
+    <span class="menu-icon">∿</span> <span class="mtext" data-i18n="menu.customLine">커스텀 라인</span>
   </div>
   <div class="menu-item" onclick="toggleEditLines()">
-    <span class="menu-icon">✥</span> 라인 편집 <span class="menu-check" id="edit-lines-check">☐</span>
+    <span class="menu-icon">✥</span> <span class="mtext" data-i18n="menu.editLines">라인 편집</span> <span class="menu-check" id="edit-lines-check">☐</span>
   </div>
 </div>
 
@@ -283,21 +306,19 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 <textarea id="edit-input" rows="1" wrap="off"></textarea>
 
 <div id="toast"></div>
-<div id="hint">빈 공간 드래그: 선택 박스 &nbsp;|&nbsp; 가운데/Space 드래그: 화면 이동 &nbsp;|&nbsp; 휠: 확대/축소 &nbsp;|&nbsp; 더블클릭: 편집 &nbsp;|&nbsp; 우클릭: 메뉴 &nbsp;|&nbsp; 단축키는 ⚙ 설정 참고</div>
-
 <!-- ── 대시보드(맵 목록) ── -->
 <div class="modal-overlay" id="dashboard-overlay">
   <div class="modal">
     <div class="modal-head">
-      <h2>📁 내 맵</h2>
+      <h2 data-i18n="dash.title">📁 내 맵</h2>
       <button class="modal-close" onclick="closeModal('dashboard-overlay')">✕</button>
     </div>
     <div class="modal-body">
       <div class="map-list" id="map-list"><div class="map-empty">불러오는 중…</div></div>
     </div>
     <div class="modal-foot">
-      <button onclick="refreshDashboard()">↻ 새로고침</button>
-      <button class="ok-btn" onclick="createMapPrompt()">＋ 새 맵 만들기</button>
+      <button onclick="refreshDashboard()" data-i18n="dash.refresh">↻ 새로고침</button>
+      <button class="ok-btn" onclick="createMapPrompt()" data-i18n="dash.new">＋ 새 맵 만들기</button>
     </div>
   </div>
 </div>
@@ -306,35 +327,42 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 <div class="modal-overlay" id="settings-overlay">
   <div class="modal">
     <div class="modal-head">
-      <h2>⚙ 설정</h2>
+      <h2 data-i18n="set.title">⚙ 설정</h2>
       <button class="modal-close" onclick="closeModal('settings-overlay')">✕</button>
     </div>
     <div class="modal-body">
       <div class="field">
-        <label>GitHub 개인 액세스 토큰 (PAT)</label>
-        <input type="password" id="cfg-token" placeholder="github_pat_… (이 레포 Contents 읽기/쓰기)">
-        <div class="hint-text">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.</div>
+        <label data-i18n="set.lang">언어 (Language)</label>
+        <div class="lang-toggle">
+          <button type="button" id="lang-ko" onclick="setLang('ko')">한국어</button>
+          <button type="button" id="lang-en" onclick="setLang('en')">English</button>
+        </div>
       </div>
       <div class="field">
-        <label>API 주소</label>
+        <label data-i18n="set.tokenLabel">GitHub 개인 액세스 토큰 (PAT)</label>
+        <input type="password" id="cfg-token" data-i18n-ph="set.tokenPh" placeholder="github_pat_… (이 레포 Contents 읽기/쓰기)">
+        <div class="hint-text" data-i18n="set.tokenHint">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.</div>
+      </div>
+      <div class="field">
+        <label data-i18n="set.apiLabel">API 주소</label>
         <input type="text" id="cfg-apiBase" placeholder="https://api.github.com">
       </div>
       <div class="field">
-        <label>레포 (owner / name)</label>
+        <label data-i18n="set.repoLabel">레포 (owner / name)</label>
         <input type="text" id="cfg-owner" placeholder="minkook3" style="width:46%;display:inline-block;margin-right:4%">
         <input type="text" id="cfg-repo" placeholder="mindmap" style="width:46%;display:inline-block">
       </div>
       <div class="field">
-        <label>브랜치 / 데이터 폴더</label>
+        <label data-i18n="set.branchLabel">브랜치 / 데이터 폴더</label>
         <input type="text" id="cfg-branch" placeholder="main" style="width:46%;display:inline-block;margin-right:4%">
         <input type="text" id="cfg-mapsDir" placeholder="data/maps" style="width:46%;display:inline-block">
-        <div class="hint-text">맵은 <code>&lt;브랜치&gt;</code> 브랜치의 <code>&lt;폴더&gt;/&lt;id&gt;.json</code> 으로 저장됩니다.</div>
+        <div class="hint-text" data-i18n="set.pathHint">맵은 <code>&lt;브랜치&gt;</code> 브랜치의 <code>&lt;폴더&gt;/&lt;id&gt;.json</code> 으로 저장됩니다.</div>
       </div>
       <div id="shortcut-section"></div>
     </div>
     <div class="modal-foot">
-      <button onclick="closeModal('settings-overlay')">취소</button>
-      <button class="ok-btn" onclick="saveSettings()">저장</button>
+      <button onclick="closeModal('settings-overlay')" data-i18n="set.cancel">취소</button>
+      <button class="ok-btn" onclick="saveSettings()" data-i18n="set.save">저장</button>
     </div>
   </div>
 </div>
@@ -390,7 +418,7 @@ const DEFAULT_KEYS = {
   selectAll: { combo: 'Mod+A',       label: '전체 선택' },
   duplicate: { combo: 'Mod+D',       label: '노드 복사' },
   editNode:  { combo: 'F2',          label: '선택 노드 편집' },
-  del:       { combo: 'Delete',      label: '선택 노드 삭제' },
+  del:       { combo: 'Delete',      label: '선택 노드 삭제 (Mac: ⌫ Backspace)' },
   fit:       { combo: 'F',           label: '화면 맞춤(모든 노드 보기)' }
 };
 let KEYS = {};                  // {action: combo}
@@ -405,9 +433,113 @@ function loadKeys() {
 function saveKeys() { localStorage.setItem('mm_keys', JSON.stringify(KEYS)); }
 function resetKeys() {
   for (const a in DEFAULT_KEYS) KEYS[a] = DEFAULT_KEYS[a].combo;
-  saveKeys(); renderShortcutHelp(); showToast('단축키를 기본값으로 초기화했습니다');
+  saveKeys(); renderShortcutHelp(); showToast(t('msg.keysReset'));
 }
 function isMac() { return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || ''); }
+
+// ── 다국어(i18n): 한국어 / English ──
+const I18N = {
+  ko: {
+    'tb.maps':'📁 내 맵', 'tb.save':'☁ 저장', 'tb.settings':'⚙ 설정',
+    'tb.undo':'↶ 실행취소', 'tb.redo':'↷ 다시실행', 'tb.share':'🔗 공유 링크 복사',
+    'tb.saveT':'GitHub에 저장 (Ctrl+S)', 'tb.settingsT':'레포·토큰 설정',
+    'tb.undoT':'실행 취소 (Ctrl+Z)', 'tb.redoT':'다시 실행 (Ctrl+Y)',
+    'badge.readonly':'읽기 전용',
+    'banner.remote':'🔄 다른 사람이 이 맵을 수정했어요 · 클릭해서 새로고침',
+    'hint.bar':'빈 공간 드래그: 선택 박스 &nbsp;|&nbsp; 가운데/Space 드래그: 화면 이동 &nbsp;|&nbsp; 휠: 확대/축소 &nbsp;|&nbsp; 더블클릭: 편집 &nbsp;|&nbsp; 우클릭: 메뉴 &nbsp;|&nbsp; 단축키는 ⚙ 설정 참고',
+    'dash.title':'📁 내 맵', 'dash.refresh':'↻ 새로고침', 'dash.new':'＋ 새 맵 만들기',
+    'dash.loading':'불러오는 중…', 'dash.empty':'저장된 맵이 없습니다. “새 맵 만들기”로 시작하세요.',
+    'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
+    'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
+    'set.tokenPh':'github_pat_… (이 레포 Contents 읽기/쓰기)',
+    'set.tokenHint':'브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.',
+    'set.apiLabel':'API 주소', 'set.repoLabel':'레포 (owner / name)', 'set.branchLabel':'브랜치 / 데이터 폴더',
+    'set.pathHint':'맵은 <code>&lt;브랜치&gt;</code> 브랜치의 <code>&lt;폴더&gt;/&lt;id&gt;.json</code> 으로 저장됩니다.',
+    'set.cancel':'취소', 'set.save':'저장',
+    'sc.kb':'단축키 — 키보드 (클릭해서 변경)', 'sc.reset':'단축키 기본값으로 초기화', 'sc.mouse':'마우스 · 제스처 (고정)',
+    'sc.act':{ undo:'실행 취소', redo:'다시 실행', save:'GitHub에 저장', selectAll:'전체 선택', duplicate:'노드 복사', editNode:'선택 노드 편집', del:'선택 노드 삭제 (Mac: ⌫ Backspace)', fit:'화면 맞춤(모든 노드 보기)' },
+    'gestures':[ ['확대 / 축소','마우스 휠'], ['선택 박스(다중 선택)','빈 공간 좌클릭 드래그'], ['선택 추가 · 제거','Shift + 클릭/드래그'], ['노드 이동 (다중 선택 시 함께)','노드 드래그'], ['화면 이동(팬)','가운데 버튼 / Space + 드래그'], ['텍스트 편집','노드 더블클릭'], ['메뉴 열기','우클릭'], ['라인 삭제','라인 클릭'] ]
+  },
+  en: {
+    'tb.maps':'📁 My Maps', 'tb.save':'☁ Save', 'tb.settings':'⚙ Settings',
+    'tb.undo':'↶ Undo', 'tb.redo':'↷ Redo', 'tb.share':'🔗 Copy share link',
+    'tb.saveT':'Save to GitHub (Ctrl+S)', 'tb.settingsT':'Repo · token settings',
+    'tb.undoT':'Undo (Ctrl+Z)', 'tb.redoT':'Redo (Ctrl+Y)',
+    'badge.readonly':'Read-only',
+    'banner.remote':'🔄 Someone else edited this map · click to refresh',
+    'hint.bar':'Drag empty space: selection box &nbsp;|&nbsp; Middle/Space drag: pan &nbsp;|&nbsp; Wheel: zoom &nbsp;|&nbsp; Double-click: edit &nbsp;|&nbsp; Right-click: menu &nbsp;|&nbsp; See ⚙ Settings for shortcuts',
+    'dash.title':'📁 My Maps', 'dash.refresh':'↻ Refresh', 'dash.new':'＋ New map',
+    'dash.loading':'Loading…', 'dash.empty':'No saved maps yet. Start with “New map”.',
+    'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
+    'set.tokenLabel':'GitHub Personal Access Token (PAT)',
+    'set.tokenPh':'github_pat_… (Contents read/write on this repo)',
+    'set.tokenHint':'Stored only in your browser (localStorage), never sent to a server. Create it under GitHub → Settings → Developer settings → <b>Fine-grained tokens</b>, scoped to <b>only this mindmap repo</b> with <b>Contents: Read and write</b>. 90-day expiry recommended.',
+    'set.apiLabel':'API base URL', 'set.repoLabel':'Repo (owner / name)', 'set.branchLabel':'Branch / data folder',
+    'set.pathHint':'Maps are saved as <code>&lt;folder&gt;/&lt;id&gt;.json</code> on the <code>&lt;branch&gt;</code> branch.',
+    'set.cancel':'Cancel', 'set.save':'Save',
+    'sc.kb':'Shortcuts — Keyboard (click to change)', 'sc.reset':'Reset shortcuts to default', 'sc.mouse':'Mouse · Gestures (fixed)',
+    'sc.act':{ undo:'Undo', redo:'Redo', save:'Save to GitHub', selectAll:'Select all', duplicate:'Duplicate node', editNode:'Edit selected node', del:'Delete selected (Mac: ⌫ Backspace)', fit:'Fit to screen (show all nodes)' },
+    'gestures':[ ['Zoom in / out','Mouse wheel'], ['Selection box (multi-select)','Drag empty space (left)'], ['Add · remove from selection','Shift + click/drag'], ['Move node (all if multi-selected)','Drag node'], ['Pan view','Middle button / Space + drag'], ['Edit text','Double-click node'], ['Open menu','Right-click'], ['Delete line','Click line'] ]
+  }
+};
+Object.assign(I18N.ko, {
+  'msg.keysReset':'단축키를 기본값으로 초기화했습니다','msg.copiedN':'{0}개 노드를 복사했습니다','msg.copied1':'노드를 복사했습니다',
+  'msg.loadMapFail':'클라우드 맵을 불러오지 못했습니다','msg.alreadyLinked':'이미 같은 방향으로 연결되어 있습니다','msg.linked':'연결되었습니다',
+  'msg.clickToConnect':'연결할 노드를 클릭하세요  (ESC: 취소)','msg.keyInUse':'이미 "{0}"에 사용 중인 키입니다','msg.keyChanged':'단축키가 변경되었습니다',
+  'msg.customLineHint':'커스텀 라인 — "라인 편집"을 켜면 피봇을 드래그할 수 있습니다','msg.allCustom':'모든 라인을 커스텀으로 변경했습니다 — "라인 편집"을 켜면 피봇 조정 가능','msg.allStraight':'모든 라인을 직선으로 변경했습니다',
+  'msg.editLinesOn':'라인 편집 ON — 커스텀 라인의 피봇을 드래그하세요','msg.editLinesOff':'라인 편집 OFF','msg.resizeOn':'노드 크기 조정 ON — 가장자리 핸들을 드래그하세요','msg.resizeOff':'노드 크기 조정 OFF',
+  'msg.needTokenSettings':'저장하려면 설정에서 GitHub 토큰을 입력하세요','msg.saved':'GitHub에 저장되었습니다','msg.authFail':'토큰이 없거나 권한이 부족합니다 ({0})','msg.saveFail':'저장 실패',
+  'msg.renamed':'이름이 변경되었습니다','msg.duplicated':'복제되었습니다','msg.deleted':'삭제되었습니다','msg.authFailShort':'토큰이 없거나 권한이 부족합니다','msg.error':'오류가 발생했습니다',
+  'msg.remoteApplied':'다른 사람의 변경이 반영되었습니다','msg.latestLoaded':'최신 버전을 불러왔습니다','msg.needToken2':'저장하려면 설정에서 토큰을 입력하세요','msg.savedAsNew':'새 맵으로 저장되었습니다','msg.mapCreated':'맵이 생성되었습니다',
+  'msg.settingsSaved':'설정이 저장되었습니다','msg.shareCopied':'공유 링크가 복사되었습니다 (편집 가능)','msg.localSaved':'저장되었습니다','msg.localSaveFail':'저장 실패: {0}','msg.noLocal':'저장된 데이터가 없습니다','msg.loaded':'불러왔습니다','msg.loadFail':'불러오기 실패',
+  'msg.dirtyShareHint':'변경 사항이 있습니다 — “☁ 저장” 후 공유하면 최신 내용이 반영됩니다','msg.openFirst':'먼저 “📁 내 맵”에서 맵을 열거나 만든 뒤 공유하세요','msg.mapWord':'맵',
+  'st.loading':'불러오는 중…','st.loadFail':'불러오기 실패','st.localIdle':'로컬 작업 중 — “내 맵”에서 클라우드 맵을 여세요','st.syncedSuffix':' · 동기화됨','st.saving':'저장 중…','st.savedSuffix':' · 저장됨','st.conflict':'충돌 발생','st.authFail':'인증 실패','st.saveFail':'저장 실패','st.localIdleShort':'로컬 작업 중','st.dirtySuffix':' · 변경됨(미저장)',
+  'cf.conflict':'다른 사람이 이 맵을 먼저 수정했습니다.\n[확인] 최신 버전을 불러오기 (현재 변경 사항은 버려집니다)\n[취소] 그대로 두기','cf.deleteMap':'"{0}" 맵을 삭제할까요? 되돌릴 수 없습니다.','cf.reloadLose':'최신 버전을 불러오면 저장하지 않은 현재 변경 사항은 사라집니다.\n계속할까요?','cf.newClear':'현재 작업을 지우고 새로 시작할까요?',
+  'pr.rename':'맵 이름 변경','pr.saveAsNew':'현재 맵을 새 이름으로 저장','pr.newMap':'새 맵 이름','pr.defaultMapName':'새 마인드맵'
+});
+Object.assign(I18N.en, {
+  'msg.keysReset':'Shortcuts reset to defaults','msg.copiedN':'Copied {0} nodes','msg.copied1':'Copied node',
+  'msg.loadMapFail':'Failed to load the cloud map','msg.alreadyLinked':'Already linked in that direction','msg.linked':'Linked',
+  'msg.clickToConnect':'Click a node to connect (ESC: cancel)','msg.keyInUse':'Key already used by "{0}"','msg.keyChanged':'Shortcut changed',
+  'msg.customLineHint':'Custom line — turn on "Edit lines" to drag pivots','msg.allCustom':'All lines changed to custom — turn on "Edit lines" to adjust pivots','msg.allStraight':'All lines changed to straight',
+  'msg.editLinesOn':'Edit lines ON — drag the pivots of custom lines','msg.editLinesOff':'Edit lines OFF','msg.resizeOn':'Resize nodes ON — drag the edge handles','msg.resizeOff':'Resize nodes OFF',
+  'msg.needTokenSettings':'Enter a GitHub token in Settings to save','msg.saved':'Saved to GitHub','msg.authFail':'Missing token or insufficient permission ({0})','msg.saveFail':'Save failed',
+  'msg.renamed':'Renamed','msg.duplicated':'Duplicated','msg.deleted':'Deleted','msg.authFailShort':'Missing token or insufficient permission','msg.error':'An error occurred',
+  'msg.remoteApplied':'Someone else’s changes were applied','msg.latestLoaded':'Loaded the latest version','msg.needToken2':'Enter a token in Settings to save','msg.savedAsNew':'Saved as a new map','msg.mapCreated':'Map created',
+  'msg.settingsSaved':'Settings saved','msg.shareCopied':'Share link copied (editable)','msg.localSaved':'Saved','msg.localSaveFail':'Save failed: {0}','msg.noLocal':'No saved data','msg.loaded':'Loaded','msg.loadFail':'Load failed',
+  'msg.dirtyShareHint':'You have unsaved changes — save (☁) first so the share reflects the latest','msg.openFirst':'Open or create a map in “📁 My Maps” first, then share','msg.mapWord':'map',
+  'st.loading':'Loading…','st.loadFail':'Load failed','st.localIdle':'Working locally — open a cloud map from “My Maps”','st.syncedSuffix':' · synced','st.saving':'Saving…','st.savedSuffix':' · saved','st.conflict':'Conflict','st.authFail':'Auth failed','st.saveFail':'Save failed','st.localIdleShort':'Working locally','st.dirtySuffix':' · changed (unsaved)',
+  'cf.conflict':'Someone edited this map first.\n[OK] Load the latest (your current changes will be discarded)\n[Cancel] Keep as is','cf.deleteMap':'Delete map "{0}"? This cannot be undone.','cf.reloadLose':'Loading the latest will discard your unsaved changes.\nContinue?','cf.newClear':'Clear current work and start over?',
+  'pr.rename':'Rename map','pr.saveAsNew':'Save current map under a new name','pr.newMap':'New map name','pr.defaultMapName':'New mindmap'
+});
+function tf(key){ var a=arguments; return String(t(key)).replace(/\{(\d+)\}/g, function(_, i){ return a[+i+1] != null ? a[+i+1] : ''; }); }
+Object.assign(I18N.ko, {
+  'tb.mapsT':'내 맵',
+  'menu.addChild':'자식 노드 추가','menu.connect':'라인 연결','menu.editText':'텍스트 편집','menu.textColor':'텍스트 색상',
+  'menu.shape':'노드 형태','menu.shapeRect':'네모','menu.shapeRound':'둥근 네모','menu.shapeCircle':'원형',
+  'menu.nodeColor':'노드 색상','menu.resize':'노드 크기 조정','menu.delete':'삭제',
+  'menu.createNode':'노드 생성','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집'
+});
+Object.assign(I18N.en, {
+  'tb.mapsT':'My Maps',
+  'menu.addChild':'Add child node','menu.connect':'Connect line','menu.editText':'Edit text','menu.textColor':'Text color',
+  'menu.shape':'Node shape','menu.shapeRect':'Rectangle','menu.shapeRound':'Rounded','menu.shapeCircle':'Circle',
+  'menu.nodeColor':'Node color','menu.resize':'Resize nodes','menu.delete':'Delete',
+  'menu.createNode':'Create node','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines'
+});
+function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
+function setLang(l) { localStorage.setItem('mm_lang', l); applyLang(); }
+function t(key) { const d = I18N[getLang()]; return (d && d[key] != null) ? d[key] : (I18N.ko[key] != null ? I18N.ko[key] : key); }
+function applyLang() {
+  const lang = getLang();
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { const v = I18N[lang][el.getAttribute('data-i18n')]; if (v != null) el.innerHTML = v; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { const v = I18N[lang][el.getAttribute('data-i18n-ph')]; if (v != null) el.placeholder = v; });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { const v = I18N[lang][el.getAttribute('data-i18n-title')]; if (v != null) el.title = v; });
+  const ko = document.getElementById('lang-ko'), en = document.getElementById('lang-en');
+  if (ko && en) { ko.classList.toggle('active', lang === 'ko'); en.classList.toggle('active', lang === 'en'); }
+  if (document.getElementById('shortcut-section')) renderShortcutHelp();
+}
 
 // 키 이벤트 → 표준 콤보 문자열
 function eventCombo(e) {
@@ -460,15 +592,21 @@ function selectNone() { selectedIds.clear(); selectedId = null; }
 function selectOne(id) { selectedIds = new Set([id]); selectedId = id; }
 function selectToggle(id) { if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); syncPrimary(); }
 function selectAllNodes() { selectedIds = new Set(nodes.map(n => n.id)); syncPrimary(); render(); }
+// (모델 A) 선택한 노드만 삭제 — 자식은 함께 지우지 않음.
+// 삭제로 끊긴 부모 참조는 가장 가까운 '살아있는' 조상으로 재연결(없으면 루트로).
+function deleteNodes(ids) {
+  if (isReadOnly) return;
+  const del = new Set(ids);
+  if (!del.size) return;
+  const survivor = pid => { let p = pid; while (p && del.has(p)) { const pn = getNode(p); p = pn ? pn.parentId : null; } return p || null; };
+  nodes.forEach(n => { if (!del.has(n.id) && n.parentId && del.has(n.parentId)) n.parentId = survivor(n.parentId); });
+  nodes = nodes.filter(n => !del.has(n.id));
+  links = links.filter(l => !del.has(l.from) && !del.has(l.to));
+  selectNone(); recordHistory(); render();
+}
 function deleteSelected() {
   if (!selectedIds.size || isReadOnly) return;
-  const toDelete = new Set();
-  const collect = id => { toDelete.add(id); getChildren(id).forEach(c => collect(c.id)); };
-  [...selectedIds].forEach(id => { const n = getNode(id); if (n && n.parentId) collect(id); });  // 루트는 보존
-  if (!toDelete.size) return;
-  nodes = nodes.filter(n => !toDelete.has(n.id));
-  links = links.filter(l => !toDelete.has(l.from) && !toDelete.has(l.to));
-  selectNone(); recordHistory(); render();
+  deleteNodes([...selectedIds]);   // 다중 선택이면 한 번에 모두 삭제
 }
 function duplicateSelected() {
   if (!selectedIds.size || isReadOnly) return;
@@ -489,7 +627,7 @@ function duplicateSelected() {
   nodes.push(...copies);
   selectedIds = new Set(copies.map(c => c.id)); syncPrimary();  // 복사본을 선택
   recordHistory(); render();
-  showToast(copies.length > 1 ? copies.length + '개 노드를 복사했습니다' : '노드를 복사했습니다');
+  showToast(copies.length > 1 ? tf('msg.copiedN', copies.length) : t('msg.copied1'));
 }
 
 // ── CLOUD(GitHub) STATE ──
@@ -565,6 +703,7 @@ function textColorFor(hex) {
 // ── BOOT ──
 window.addEventListener('DOMContentLoaded', () => {
   loadKeys();
+  applyLang();          // 저장된 언어(한/영) UI 반영
   initColorPicker();
   setupEvents();
   setupTouch();
@@ -574,10 +713,10 @@ window.addEventListener('DOMContentLoaded', () => {
   if (hash.indexOf('m=') === 0) {
     // 클라우드 맵 공유 링크 — 편집 가능(토큰 있으면)
     initDefault(); render(); resetHistory();
-    setCloudStatus('dirty', '불러오는 중…');
+    setCloudStatus('dirty', t('st.loading'));
     loadMapById(hash.slice(2))
       .then(() => updateReadonlyBanner())
-      .catch(e => { setCloudStatus('error', '불러오기 실패'); showToast('클라우드 맵을 불러오지 못했습니다'); handleCloudErr(e); });
+      .catch(e => { setCloudStatus('error', t('st.loadFail')); showToast(t('msg.loadMapFail')); handleCloudErr(e); });
 
   } else if (hash.length > 0) {
     // 레거시 압축 blob 공유 — 읽기 전용
@@ -585,7 +724,6 @@ window.addEventListener('DOMContentLoaded', () => {
       loadFromHash();
       isReadOnly = true;
       document.getElementById('readonly-badge').style.display = 'block';
-      document.getElementById('hint').style.display = 'none';
       document.getElementById('btn-undo').style.display = 'none';
       document.getElementById('btn-redo').style.display = 'none';
     } catch(e) { initDefault(); }
@@ -595,7 +733,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // 로컬 초안 복원
     if (!loadFromLocal(true)) initDefault();
     render(); resetHistory();
-    setCloudStatus('', '로컬 작업 중 — “내 맵”에서 클라우드 맵을 여세요');
+    setCloudStatus('', t('st.localIdle'));
   }
 
   startRemotePolling();   // 비동기 협업: 원격 변경 주기적 감지
@@ -1033,17 +1171,17 @@ function createLink(from, to) {
   if (from === to) { render(); return; }
   // 같은 방향의 중복만 방지(반대 방향은 허용 → 두 노드를 양방향 두 선으로 연결 가능)
   const dup = links.some(l => l.from === from && l.to === to);
-  if (dup) { showToast('이미 같은 방향으로 연결되어 있습니다'); render(); return; }
+  if (dup) { showToast(t('msg.alreadyLinked')); render(); return; }
   links.push({ id: nid(), from, to });
   recordHistory();
   render();
-  showToast('연결되었습니다');
+  showToast(t('msg.linked'));
 }
 
 function startConnecting(id) {
   connecting = true; connectFromId = id;
   document.body.style.cursor = 'crosshair';
-  showToast('연결할 노드를 클릭하세요  (ESC: 취소)');
+  showToast(t('msg.clickToConnect'));
   render();
 }
 
@@ -1142,15 +1280,19 @@ function setupEvents() {
       if (n) {
         const w = s2w(e.clientX, e.clientY);
         const g0 = nodeGeom(n);
+        // 다중 선택 + 잡은 노드가 그 안에 있으면 선택된 노드 전부 동일 크기로 조정
+        const multi = selectedIds.size > 1 && selectedIds.has(dragResize.id);
         if (dragResize.hx !== 0) {
           const fixedX = n.x - dragResize.hx * g0.baseW / 2;
           const newW = Math.max(Math.abs(w.x - fixedX), g0.contentWbase);
           n.x = fixedX + dragResize.hx * newW / 2; n.w = newW;
+          if (multi) selectedIds.forEach(id => { if (id !== n.id) { const m = getNode(id); if (m) m.w = newW; } });
         }
         if (dragResize.hy !== 0) {
           const fixedY = n.y - dragResize.hy * g0.baseH / 2;
           const newH = Math.max(Math.abs(w.y - fixedY), g0.contentHbase);
           n.y = fixedY + dragResize.hy * newH / 2; n.h = newH;
+          if (multi) selectedIds.forEach(id => { if (id !== n.id) { const m = getNode(id); if (m) m.h = newH; } });
         }
         render();
       }
@@ -1233,10 +1375,10 @@ function setupEvents() {
       const combo = eventCombo(e);
       if (!combo) return;   // 수정자 단독은 계속 대기
       const conflict = Object.keys(KEYS).find(a => a !== rebindActive.action && KEYS[a] === combo);
-      if (conflict) { showToast('이미 "' + DEFAULT_KEYS[conflict].label + '"에 사용 중인 키입니다'); return; }
+      if (conflict) { showToast(tf('msg.keyInUse', DEFAULT_KEYS[conflict].label)); return; }
       KEYS[rebindActive.action] = combo; saveKeys();
       rebindActive = null; renderShortcutHelp();
-      showToast('단축키가 변경되었습니다');
+      showToast(t('msg.keyChanged'));
       return;
     }
 
@@ -1262,7 +1404,9 @@ function setupEvents() {
     }
 
     // 5) 키맵 디스패치
-    const action = comboToAction(eventCombo(e));
+    const combo = eventCombo(e);
+    let action = comboToAction(combo);
+    if (!action && combo === 'Backspace') action = 'del';   // Mac엔 Delete 키가 없어 Backspace로도 삭제
     if (action === 'fit') { e.preventDefault(); fitView(); return; }   // 화면 맞춤은 읽기 전용에서도 허용
     if (isReadOnly) return;
     if (action) { e.preventDefault(); runShortcut(action); }
@@ -1430,10 +1574,9 @@ function onNodeRightClick(e, id) {
   hideAll();
 
   const n = getNode(id);
-  const hasParent = !!n.parentId;
-  // 루트 노드는 삭제 불가 → 삭제 항목과 그 앞 구분선을 함께 숨겨 빈 줄이 남지 않게
-  document.getElementById('menu-delete').style.display = hasParent ? 'flex' : 'none';
-  document.getElementById('menu-delete-sep').style.display = hasParent ? 'block' : 'none';
+  // 부모(루트) 노드 포함 모든 노드에서 삭제 항목 표시
+  document.getElementById('menu-delete').style.display = 'flex';
+  document.getElementById('menu-delete-sep').style.display = 'block';
   document.getElementById('resize-nodes-check').textContent = resizeNodes ? '☑' : '☐';
   document.getElementById('menu-shape').classList.remove('open');  // 서브메뉴 초기 닫힘
 
@@ -1469,10 +1612,9 @@ function menuAddChild() { hideAll(); if (contextNodeId) addChild(contextNodeId);
 function menuEdit() { hideAll(); if (contextNodeId) startEdit(contextNodeId); }
 function menuDelete() {
   hideAll();
-  if (contextNodeId) {
-    deleteSubtree(contextNodeId);
-    selectNone();
-  }
+  // 우클릭 시 해당 노드가 선택되므로 selectedIds 기준으로 삭제(다중 선택이면 모두)
+  const ids = selectedIds.size ? [...selectedIds] : (contextNodeId ? [contextNodeId] : []);
+  if (ids.length) deleteNodes(ids);
 }
 function menuConnect() { hideAll(); if (contextNodeId) startConnecting(contextNodeId); }
 
@@ -1510,7 +1652,7 @@ function lineSetType(type) {
   hideAll();
   if (!contextEdge) return;
   setEdgeLineType(contextEdge.owner, contextEdge.aNode, contextEdge.bNode, type);
-  if (type === 'custom') showToast('커스텀 라인 — "라인 편집"을 켜면 피봇을 드래그할 수 있습니다');
+  if (type === 'custom') showToast(t('msg.customLineHint'));
   recordHistory();
   render();
 }
@@ -1523,14 +1665,14 @@ function setAllLinesType(type) {
 function menuAllLines(type) {
   hideAll();
   setAllLinesType(type);
-  showToast(type === 'custom' ? '모든 라인을 커스텀으로 변경했습니다 — "라인 편집"을 켜면 피봇 조정 가능' : '모든 라인을 직선으로 변경했습니다');
+  showToast(type === 'custom' ? t('msg.allCustom') : t('msg.allStraight'));
 }
 
 // 라인 편집 모드(피봇 표시) 토글
 function toggleEditLines() {
   editLines = !editLines;
   hideAll();
-  showToast(editLines ? '라인 편집 ON — 커스텀 라인의 피봇을 드래그하세요' : '라인 편집 OFF');
+  showToast(editLines ? t('msg.editLinesOn') : t('msg.editLinesOff'));
   render();
 }
 
@@ -1538,7 +1680,7 @@ function toggleEditLines() {
 function toggleResizeNodes() {
   resizeNodes = !resizeNodes;
   hideAll();
-  showToast(resizeNodes ? '노드 크기 조정 ON — 가장자리 핸들을 드래그하세요' : '노드 크기 조정 OFF');
+  showToast(resizeNodes ? t('msg.resizeOn') : t('msg.resizeOff'));
   render();
 }
 
@@ -1816,48 +1958,48 @@ async function loadMapById(id) {
   viewX = 0; viewY = 0; viewScale = 1; selectNone();
   mapDirty = false;
   render(); resetHistory();
-  setCloudStatus('synced', currentMapName + ' · 동기화됨');
+  setCloudStatus('synced', currentMapName + t('st.syncedSuffix'));
 }
 
 async function cloudSave() {
-  if (!ghToken()) { showToast('저장하려면 설정에서 GitHub 토큰을 입력하세요'); openSettings(); return; }
+  if (!ghToken()) { showToast(t('msg.needTokenSettings')); openSettings(); return; }
   if (!currentMapId) {   // 아직 클라우드 맵이 아니면 → 새 맵으로 저장
     createMapPrompt(true);
     return;
   }
-  setCloudStatus('dirty', '저장 중…');
+  setCloudStatus('dirty', t('st.saving'));
   try {
     const sha = await ghPutFile(mapPath(currentMapId), getMapPayload(), currentMapSha, 'update map: ' + currentMapName);
     currentMapSha = sha; mapDirty = false;
-    setCloudStatus('synced', currentMapName + ' · 저장됨');
-    showToast('GitHub에 저장되었습니다');
+    setCloudStatus('synced', currentMapName + t('st.savedSuffix'));
+    showToast(t('msg.saved'));
   } catch (e) {
     if (e.conflict) {
-      setCloudStatus('error', '충돌 발생');
-      if (confirm('다른 사람이 이 맵을 먼저 수정했습니다.\n[확인] 최신 버전을 불러오기 (현재 변경 사항은 버려집니다)\n[취소] 그대로 두기')) {
+      setCloudStatus('error', t('st.conflict'));
+      if (confirm(t('cf.conflict'))) {
         await loadMapById(currentMapId);
       }
     } else if (e.auth) {
-      setCloudStatus('error', '인증 실패');
-      showToast('토큰이 없거나 권한이 부족합니다 (' + (e.status || '') + ')'); openSettings();
+      setCloudStatus('error', t('st.authFail'));
+      showToast(tf('msg.authFail', (e.status || ''))); openSettings();
     } else {
-      setCloudStatus('error', '저장 실패');
-      showToast(e.message || '저장 실패');
+      setCloudStatus('error', t('st.saveFail'));
+      showToast(e.message || t('msg.saveFail'));
     }
   }
 }
 
 async function renameMap(id, curName) {
-  promptInput('맵 이름 변경', curName, async (name) => {
+  promptInput(t('pr.rename'), curName, async (name) => {
     if (!name || name === curName) return;
     try {
       const r = await ghGetFile(mapPath(id));
       if (!r) throw new Error('맵을 찾을 수 없습니다');
       const data = Object.assign({}, r.data, { name, updatedAt: new Date().toISOString() });
       const newSha = await ghPutFile(mapPath(id), data, r.sha, 'chore: rename map to "' + name + '"');
-      if (id === currentMapId) { currentMapName = name; currentMapSha = newSha; setCloudStatus('synced', name + ' · 동기화됨'); }
+      if (id === currentMapId) { currentMapName = name; currentMapSha = newSha; setCloudStatus('synced', name + t('st.syncedSuffix')); }
       refreshDashboard();
-      showToast('이름이 변경되었습니다');
+      showToast(t('msg.renamed'));
     } catch (e) { handleCloudErr(e); }
   });
 }
@@ -1871,24 +2013,24 @@ async function duplicateMap(id) {
     const data = Object.assign({}, r.data, { name, updatedAt: new Date().toISOString() });
     await ghPutFile(mapPath(nid2), data, null, 'feat: duplicate map');
     refreshDashboard();
-    showToast('복제되었습니다');
+    showToast(t('msg.duplicated'));
   } catch (e) { handleCloudErr(e); }
 }
 
 async function deleteMap(id, name) {
-  if (!confirm('"' + name + '" 맵을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  if (!confirm(tf('cf.deleteMap', name))) return;
   try {
     const r = await ghGetFile(mapPath(id));
     if (r) await ghDeleteFile(mapPath(id), r.sha, 'chore: delete map "' + name + '"');
-    if (id === currentMapId) { currentMapId = null; currentMapSha = null; currentMapName = null; setCloudStatus('', '로컬 작업 중'); }
+    if (id === currentMapId) { currentMapId = null; currentMapSha = null; currentMapName = null; setCloudStatus('', t('st.localIdleShort')); }
     refreshDashboard();
-    showToast('삭제되었습니다');
+    showToast(t('msg.deleted'));
   } catch (e) { handleCloudErr(e); }
 }
 
 function handleCloudErr(e) {
-  if (e && e.auth) { showToast('토큰이 없거나 권한이 부족합니다'); openSettings(); }
-  else { showToast((e && e.message) || '오류가 발생했습니다'); }
+  if (e && e.auth) { showToast(t('msg.authFailShort')); openSettings(); }
+  else { showToast((e && e.message) || t('msg.error')); }
 }
 
 // ── 상태 표시줄 ──
@@ -1900,7 +2042,7 @@ function setCloudStatus(cls, text) {
 }
 function markDirty() {
   if (!currentMapId) return;
-  if (!mapDirty) { mapDirty = true; setCloudStatus('dirty', (currentMapName || '맵') + ' · 변경됨(미저장)'); }
+  if (!mapDirty) { mapDirty = true; setCloudStatus('dirty', (currentMapName || t('msg.mapWord')) + t('st.dirtySuffix')); }
 }
 
 // ── 원격 변경 감지 (비동기 협업) ──
@@ -1920,7 +2062,7 @@ async function checkRemoteChanges() {
     } else {
       // 미저장 변경이 없으면 조용히 최신본으로 갱신
       await loadMapById(currentMapId);
-      showToast('다른 사람의 변경이 반영되었습니다');
+      showToast(t('msg.remoteApplied'));
     }
   } catch (e) { /* 폴링 실패는 조용히 무시 */ }
 }
@@ -1934,9 +2076,9 @@ function hideRemoteBanner() {
   if (b) b.style.display = 'none';
 }
 function reloadRemoteChange() {
-  if (mapDirty && !confirm('최신 버전을 불러오면 저장하지 않은 현재 변경 사항은 사라집니다.\n계속할까요?')) return;
+  if (mapDirty && !confirm(t('cf.reloadLose'))) return;
   hideRemoteBanner();
-  loadMapById(currentMapId).then(() => showToast('최신 버전을 불러왔습니다')).catch(e => handleCloudErr(e));
+  loadMapById(currentMapId).then(() => showToast(t('msg.latestLoaded'))).catch(e => handleCloudErr(e));
 }
 function startRemotePolling() {
   if (remotePollTimer) clearInterval(remotePollTimer);
@@ -1949,10 +2091,10 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 async function refreshDashboard() {
   const box = document.getElementById('map-list');
-  box.innerHTML = '<div class="map-empty">불러오는 중…</div>';
+  box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.loading')) + '</div>';
   try {
     const list = await listMaps();
-    if (!list.length) { box.innerHTML = '<div class="map-empty">저장된 맵이 없습니다. “새 맵 만들기”로 시작하세요.</div>'; return; }
+    if (!list.length) { box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.empty')) + '</div>'; return; }
     list.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
     box.innerHTML = '';
     list.forEach(m => {
@@ -1985,30 +2127,30 @@ async function refreshDashboard() {
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
 async function openMap(id) {
-  setCloudStatus('dirty', '불러오는 중…');
+  setCloudStatus('dirty', t('st.loading'));
   try { await loadMapById(id); location.hash = 'm=' + id; }
-  catch (e) { handleCloudErr(e); setCloudStatus('error', '불러오기 실패'); }
+  catch (e) { handleCloudErr(e); setCloudStatus('error', t('st.loadFail')); }
 }
 
 function createMapPrompt(fromCurrent) {
-  promptInput(fromCurrent ? '현재 맵을 새 이름으로 저장' : '새 맵 이름', '새 마인드맵', async (name) => {
+  promptInput(fromCurrent ? t('pr.saveAsNew') : t('pr.newMap'), t('pr.defaultMapName'), async (name) => {
     if (!name) return;
-    if (!ghToken()) { showToast('저장하려면 설정에서 토큰을 입력하세요'); openSettings(); return; }
+    if (!ghToken()) { showToast(t('msg.needToken2')); openSettings(); return; }
     try {
       if (fromCurrent) {
         const id = genId();
         const sha = await ghPutFile(mapPath(id), getMapPayload(name), null, 'feat: create map "' + name + '"');
         currentMapId = id; currentMapSha = sha; currentMapName = name; mapDirty = false;
         location.hash = 'm=' + id;
-        setCloudStatus('synced', name + ' · 저장됨');
-        showToast('새 맵으로 저장되었습니다');
+        setCloudStatus('synced', name + t('st.savedSuffix'));
+        showToast(t('msg.savedAsNew'));
       } else {
         const { id, sha } = await createMap(name);
         closeModal('dashboard-overlay');
         currentMapId = id; currentMapSha = sha; currentMapName = name;
         location.hash = 'm=' + id;
         await loadMapById(id);
-        showToast('맵이 생성되었습니다');
+        showToast(t('msg.mapCreated'));
       }
     } catch (e) { handleCloudErr(e); }
   });
@@ -2032,23 +2174,16 @@ function openSettings() {
 function renderShortcutHelp() {
   const box = document.getElementById('shortcut-section');
   if (!box) return;
-  const gestures = [
-    ['확대 / 축소', '마우스 휠'],
-    ['선택 박스(다중 선택)', '빈 공간 좌클릭 드래그'],
-    ['선택 추가 · 제거', 'Shift + 클릭/드래그'],
-    ['노드 이동 (다중 선택 시 함께)', '노드 드래그'],
-    ['화면 이동(팬)', '가운데 버튼 / Space + 드래그'],
-    ['텍스트 편집', '노드 더블클릭'],
-    ['메뉴 열기', '우클릭'],
-    ['라인 삭제', '라인 클릭']
-  ];
-  let html = '<div class="field" style="margin-top:4px"><label>단축키 — 키보드 (클릭해서 변경)</label><div class="sc-list">';
+  const gestures = t('gestures');
+  const actLabels = t('sc.act');
+  let html = '<div class="field" style="margin-top:4px"><label>' + escapeHtml(t('sc.kb')) + '</label><div class="sc-list">';
   for (const a in DEFAULT_KEYS) {
-    html += `<div class="sc-row"><span class="sc-label">${DEFAULT_KEYS[a].label}</span>` +
+    const lbl = (actLabels && actLabels[a]) || DEFAULT_KEYS[a].label;
+    html += `<div class="sc-row"><span class="sc-label">${escapeHtml(lbl)}</span>` +
             `<button type="button" class="sc-key" data-act="${a}">${escapeHtml(fmtCombo(KEYS[a]))}</button></div>`;
   }
-  html += '</div><div style="margin-top:8px"><button type="button" onclick="resetKeys()">단축키 기본값으로 초기화</button></div></div>';
-  html += '<div class="field"><label>마우스 · 제스처 (고정)</label><div class="sc-list">';
+  html += '</div><div style="margin-top:8px"><button type="button" onclick="resetKeys()">' + escapeHtml(t('sc.reset')) + '</button></div></div>';
+  html += '<div class="field"><label>' + escapeHtml(t('sc.mouse')) + '</label><div class="sc-list">';
   gestures.forEach(([v, k]) => {
     html += `<div class="sc-row"><span class="sc-label">${v}</span><span class="sc-key static">${escapeHtml(k)}</span></div>`;
   });
@@ -2079,7 +2214,7 @@ function saveSettings() {
   };
   localStorage.setItem('gh_cfg', JSON.stringify(cfg));
   closeModal('settings-overlay');
-  showToast('설정이 저장되었습니다');
+  showToast(t('msg.settingsSaved'));
   updateReadonlyBanner();
 }
 
@@ -2103,7 +2238,7 @@ function promptOK() {
 function copyShareLink(id) {
   const url = location.origin + location.pathname + '#m=' + id;
   navigator.clipboard.writeText(url)
-    .then(() => showToast('공유 링크가 복사되었습니다 (편집 가능)'))
+    .then(() => showToast(t('msg.shareCopied')))
     .catch(() => prompt('링크를 복사하세요:', url));
 }
 
@@ -2130,31 +2265,31 @@ function applyMapData(data) {
 function saveToLocal() {
   try {
     localStorage.setItem('mindmap_v1', JSON.stringify(getMapData()));
-    showToast('저장되었습니다');
-  } catch(e) { showToast('저장 실패: ' + e.message); }
+    showToast(t('msg.localSaved'));
+  } catch(e) { showToast(tf('msg.localSaveFail', e.message)); }
 }
 
 function loadFromLocal(silent = false) {
   try {
     const raw = localStorage.getItem('mindmap_v1');
-    if (!raw) { if (!silent) showToast('저장된 데이터가 없습니다'); return false; }
+    if (!raw) { if (!silent) showToast(t('msg.noLocal')); return false; }
     applyMapData(JSON.parse(raw));
     render();
-    if (!silent) { resetHistory(); showToast('불러왔습니다'); }
+    if (!silent) { resetHistory(); showToast(t('msg.loaded')); }
     return true;
-  } catch(e) { if (!silent) showToast('불러오기 실패'); return false; }
+  } catch(e) { if (!silent) showToast(t('msg.loadFail')); return false; }
 }
 
 // ── SHARE ──
 function shareMap() {
   // 클라우드 맵이 열려있을 때만 → 살아있는(편집 가능) 짧은 링크 공유
   if (currentMapId) {
-    if (mapDirty && ghToken()) showToast('변경 사항이 있습니다 — “☁ 저장” 후 공유하면 최신 내용이 반영됩니다');
+    if (mapDirty && ghToken()) showToast(t('msg.dirtyShareHint'));
     copyShareLink(currentMapId);
     return;
   }
   // 맵을 안 연 상태면 안내만 (옛 스냅샷 링크 생성 안 함)
-  showToast('먼저 “📁 내 맵”에서 맵을 열거나 만든 뒤 공유하세요');
+  showToast(t('msg.openFirst'));
   openDashboard();
 }
 
@@ -2167,7 +2302,7 @@ function loadFromHash() {
 
 // ── NEW MAP ──
 function newMap() {
-  if (!confirm('현재 작업을 지우고 새로 시작할까요?')) return;
+  if (!confirm(t('cf.newClear'))) return;
   idCounter = 1; selectNone();
   viewX = 0; viewY = 0; viewScale = 1;
   initDefault(); render(); resetHistory();
