@@ -405,9 +405,6 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="menuCreateNode()">
     <span class="menu-icon">＋</span> <span class="mtext" data-i18n="menu.createNode">노드 생성</span>
   </div>
-  <div class="menu-item touch-only" onclick="menuRectSelect()">
-    <span class="menu-icon">▦</span> <span class="mtext" data-i18n="menu.rectSelect">사각 선택</span>
-  </div>
   <div class="menu-item" onclick="menuCanvasBg()">
     <span class="menu-icon">●</span> <span class="mtext" data-i18n="menu.canvasBg">배경 색상</span>
   </div>
@@ -1888,12 +1885,6 @@ function clearArm() {                   // 타이머만 정리(armDragStarted는
   if (menuTimer) { clearTimeout(menuTimer); menuTimer = null; }
 }
 
-// 빈 화면 메뉴 '사각 선택' — 다음 한 번의 드래그로 박스 선택
-function menuRectSelect() {
-  hideAll();
-  marqueeArmed = true;
-  showToast(t('msg.rectHint'));
-}
 // 사각 선택(마키) 시작 — 마우스/터치 공용
 function startMarquee(e) {
   marqueeArmed = false;
@@ -2034,8 +2025,18 @@ function onSvgPointerDown(e) {
     isPanning = true;
     panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
   }
-  // 터치로 빈 곳 길게 누르면 캔버스 메뉴(편집 모드)
-  if (!isMouse && onEmpty && !isReadOnly) startLP(() => openCanvasMenuAt(e.clientX, e.clientY));
+  // 터치로 빈 곳: 0.5초 잡으면 무장(진동) → 끌면 사각 선택 / 안 끌고 떼면 캔버스 메뉴
+  if (!isMouse && onEmpty && !isReadOnly) {
+    armed = false; armDragStarted = false; nodeArmId = null;
+    clearArm();
+    armTimer = setTimeout(() => {
+      armTimer = null;
+      if (gMoved) return;            // 무장 전 움직였으면(=팬) 무장 안 함
+      isPanning = false;
+      armed = true;                  // 빈 배경 무장(gKind === 'empty') — 끌면 마키, 떼면 메뉴
+      if (navigator.vibrate) navigator.vibrate(25);
+    }, NODE_HOLD_MS);
+  }
 }
 
 function onPointerMove(e) {
@@ -2051,6 +2052,12 @@ function onPointerMove(e) {
       (Math.abs(e.clientX - gStart.x) > NODE_DRAG_TOL || Math.abs(e.clientY - gStart.y) > NODE_DRAG_TOL)) {
     armDragStarted = true;
     if (menuTimer) { clearTimeout(menuTimer); menuTimer = null; }   // 드래그 시작 → 메뉴 자동표시 취소
+    if (gKind === 'empty') {        // 빈 배경 무장 드래그 → 사각(마키) 선택 시작
+      isPanning = false;
+      marqueeBase = new Set(selectedIds);
+      isMarquee = true; marqueeStart = { x: gStart.x, y: gStart.y };
+      updateMarquee(e); render();
+    }
   }
   if (dragResize) {
     const n = getNode(dragResize.id);
@@ -2116,6 +2123,12 @@ function finishGesture(e) {
     else if (!lpFired) {                      // 메뉴 자동표시가 아직 안 떴으면 떼는 순간 메뉴
       swallowClick = true;
       onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: gStart ? gStart.x : e.clientX, clientY: gStart ? gStart.y : e.clientY }, nodeArmId);
+    }
+  } else if (gKind === 'empty' && armed) {
+    // 무장된 빈 배경: 끌었으면 사각 선택 완료(위에서 종료), 안 끌고 떼면 캔버스 메뉴
+    if (!armDragStarted) {
+      swallowClick = true;
+      openCanvasMenuAt(gStart ? gStart.x : e.clientX, gStart ? gStart.y : e.clientY);
     }
   } else {
     if (isDragging && gMoved) recordHistory();
