@@ -114,8 +114,9 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 @media (max-width: 600px) {
   .modal { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; border-radius: 0; }
 }
-/* 단, 짧은 입력 프롬프트(링크·이름 등)는 작고 담백하게 유지 */
-#prompt-overlay .modal { width: min(420px, 92vw); max-width: 92vw; height: auto; max-height: 86vh; border-radius: 12px; }
+/* 단, 짧은 입력 프롬프트(링크·이름 등)는 작고 담백하게 + 상단 배치(가상키보드에 안 가리게) */
+#prompt-overlay { align-items: flex-start; }
+#prompt-overlay .modal { width: min(420px, 92vw); max-width: 92vw; height: auto; max-height: 86vh; border-radius: 12px; margin-top: 6vh; }
 
 #context-menu, #canvas-menu, #line-menu {
   position: fixed; background: #16213e; border: 1px solid #2a5a9a;
@@ -1853,7 +1854,7 @@ function onNodePointerDown(e, id) {
   panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
   nodeArmId = id; armed = false; armDragStarted = false;
   clearArm();
-  armTimer = setTimeout(() => {                // 0.5초 가만히 잡고 있으면 노드 드래그로 무장
+  armTimer = setTimeout(() => {                // 0.5초 가만히 잡으면 무장(끌면 노드이동 / 안 끌고 떼면 메뉴)
     armTimer = null;
     if (gMoved) return;                        // 그 사이 움직였으면(=팬) 무장 안 함
     isPanning = false;
@@ -1864,15 +1865,7 @@ function onNodePointerDown(e, id) {
     armed = true;
     if (navigator.vibrate) navigator.vibrate(25);
     render();
-    // 무장 후에도 계속 가만히 있으면 메뉴 자동 표시(캔버스 메뉴처럼 신뢰성↑)
-    menuTimer = setTimeout(() => {
-      menuTimer = null;
-      if (armDragStarted) return;              // 이미 드래그 시작했으면 메뉴 안 띄움
-      lpFired = true; swallowClick = true;
-      isDragging = false; dragNodeId = null; isPanning = false;
-      onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: gStart.x, clientY: gStart.y }, id);
-      render();
-    }, NODE_MENU_MS);
+    // 메뉴는 누르는 도중 자동으로 띄우지 않음 → 손을 떼는 순간(드래그 안 했으면) finishGesture에서 표시
   }, NODE_HOLD_MS);
 }
 
