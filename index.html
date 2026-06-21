@@ -358,6 +358,12 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="menuTextColor()">
     <span class="menu-icon">A</span> <span class="mtext" data-i18n="menu.textColor">텍스트 색상</span>
   </div>
+  <div class="menu-item" id="menu-link-add" onclick="menuLinkAdd()">
+    <span class="menu-icon">🌐</span> <span class="mtext" data-i18n="menu.linkAdd">링크 삽입</span>
+  </div>
+  <div class="menu-item" id="menu-link-edit" onclick="menuLinkEdit()">
+    <span class="menu-icon">🌐</span> <span class="mtext" data-i18n="menu.linkEdit">링크 편집</span>
+  </div>
   <div class="menu-sep"></div>
   <div class="menu-item has-submenu" id="menu-shape" onclick="toggleSubmenu(event, this)">
     <span class="menu-icon">◇</span> <span class="mtext" data-i18n="menu.shape">노드 형태</span> <span class="submenu-arrow">›</span>
@@ -634,7 +640,8 @@ Object.assign(I18N.ko, {
   'msg.fitView':'화면에 맞췄습니다',
   'st.loading':'불러오는 중…','st.loadFail':'불러오기 실패','st.localIdle':'','st.syncedSuffix':' · 동기화됨','st.saving':'저장 중…','st.savedSuffix':' · 저장됨','st.conflict':'충돌 발생','st.authFail':'인증 실패','st.saveFail':'저장 실패','st.localIdleShort':'','st.dirtySuffix':' · 변경됨(미저장)',
   'cf.conflict':'다른 사람이 이 맵을 먼저 수정했습니다.\n[확인] 최신 버전을 불러오기 (현재 변경 사항은 버려집니다)\n[취소] 그대로 두기','cf.deleteMap':'"{0}" 맵을 삭제할까요? 되돌릴 수 없습니다.','cf.reloadLose':'최신 버전을 불러오면 저장하지 않은 현재 변경 사항은 사라집니다.\n계속할까요?','cf.newClear':'현재 작업을 지우고 새로 시작할까요?',
-  'pr.rename':'맵 이름 변경','pr.saveAsNew':'현재 맵을 새 이름으로 저장','pr.newMap':'새 맵 이름','pr.defaultMapName':'새 마인드맵'
+  'pr.rename':'맵 이름 변경','pr.saveAsNew':'현재 맵을 새 이름으로 저장','pr.newMap':'새 맵 이름','pr.defaultMapName':'새 마인드맵',
+  'pr.linkTitle':'링크 주소 (URL) — 비우면 링크 제거','msg.linkSet':'링크가 설정되었습니다','msg.linkRemoved':'링크가 제거되었습니다'
 });
 Object.assign(I18N.en, {
   'msg.keysReset':'Shortcuts reset to defaults','msg.copiedN':'Copied {0} nodes','msg.copied1':'Copied node',
@@ -653,7 +660,8 @@ Object.assign(I18N.en, {
   'msg.fitView':'Fit to screen',
   'st.loading':'Loading…','st.loadFail':'Load failed','st.localIdle':'','st.syncedSuffix':' · synced','st.saving':'Saving…','st.savedSuffix':' · saved','st.conflict':'Conflict','st.authFail':'Auth failed','st.saveFail':'Save failed','st.localIdleShort':'','st.dirtySuffix':' · changed (unsaved)',
   'cf.conflict':'Someone edited this map first.\n[OK] Load the latest (your current changes will be discarded)\n[Cancel] Keep as is','cf.deleteMap':'Delete map "{0}"? This cannot be undone.','cf.reloadLose':'Loading the latest will discard your unsaved changes.\nContinue?','cf.newClear':'Clear current work and start over?',
-  'pr.rename':'Rename map','pr.saveAsNew':'Save current map under a new name','pr.newMap':'New map name','pr.defaultMapName':'New mindmap'
+  'pr.rename':'Rename map','pr.saveAsNew':'Save current map under a new name','pr.newMap':'New map name','pr.defaultMapName':'New mindmap',
+  'pr.linkTitle':'Link URL — leave empty to remove','msg.linkSet':'Link set','msg.linkRemoved':'Link removed'
 });
 function tf(key){ var a=arguments; return String(t(key)).replace(/\{(\d+)\}/g, function(_, i){ return a[+i+1] != null ? a[+i+1] : ''; }); }
 Object.assign(I18N.ko, {
@@ -662,7 +670,8 @@ Object.assign(I18N.ko, {
   'menu.shape':'노드 형태','menu.shapeRect':'네모','menu.shapeRound':'둥근 네모','menu.shapeCircle':'원형',
   'menu.nodeColor':'노드 색상','menu.resize':'노드 크기 조정','menu.delete':'삭제',
   'menu.selectNodes':'노드 선택','menu.selChildren':'자식 노드','menu.selAll':'모든 노드',
-  'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집'
+  'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집',
+  'menu.linkAdd':'링크 삽입','menu.linkEdit':'링크 편집'
 });
 Object.assign(I18N.en, {
   'tb.mapsT':'My Maps',
@@ -670,7 +679,8 @@ Object.assign(I18N.en, {
   'menu.shape':'Node shape','menu.shapeRect':'Rectangle','menu.shapeRound':'Rounded','menu.shapeCircle':'Circle',
   'menu.nodeColor':'Node color','menu.resize':'Resize nodes','menu.delete':'Delete',
   'menu.selectNodes':'Select nodes','menu.selChildren':'Child nodes','menu.selAll':'All nodes',
-  'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines'
+  'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines',
+  'menu.linkAdd':'Insert link','menu.linkEdit':'Edit link'
 });
 function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
 function setLang(l) { localStorage.setItem('mm_lang', l); applyLang(); }
@@ -1250,6 +1260,9 @@ function render() {
     g.appendChild(shapeEl);
     g.appendChild(text);
 
+    // 링크가 있으면 우측 상단에 빨간 점(탭/클릭 → 새 창으로 열기) — 뷰어 모드에서도 동작
+    if (n.link) addLinkDot(g, n, geom, s);
+
     // 노드 크기 조정 모드: 가장자리 리사이즈 핸들
     if (!isReadOnly && resizeNodes) addResizeHandles(g, n, geom, s);
 
@@ -1262,6 +1275,34 @@ function render() {
   });
 
   if (connecting) drawTempLine();
+}
+
+// 링크 표시용 빨간 점 + 터치 히트 영역. 점을 탭/클릭하면 링크가 새 창으로 열림.
+function addLinkDot(g, n, geom, s) {
+  // 도형별 우측 상단 위치
+  let dx, dy;
+  if (geom.shape === 'circle') { dx = s.x + geom.r * 0.707; dy = s.y - geom.r * 0.707; }
+  else if (geom.shape === 'ellipse') { dx = s.x + geom.rx * 0.707; dy = s.y - geom.ry * 0.707; }
+  else { dx = s.x + geom.hw; dy = s.y - geom.hh; }
+  const dotR = Math.max(5, 6 * viewScale);
+  // 손가락 탭용 넓은 투명 히트
+  const hit = document.createElementNS(NS, 'circle');
+  hit.setAttribute('cx', dx); hit.setAttribute('cy', dy);
+  hit.setAttribute('r', Math.max(14, dotR * 2.2));
+  hit.setAttribute('fill', 'transparent');
+  hit.style.cursor = 'pointer';
+  const url = n.link;
+  hit.addEventListener('pointerdown', e => e.stopPropagation());   // 노드 드래그/제스처로 번지지 않게
+  hit.addEventListener('click', e => { e.stopPropagation(); openNodeLink(url); });
+  // 보이는 빨간 점
+  const dot = document.createElementNS(NS, 'circle');
+  dot.setAttribute('cx', dx); dot.setAttribute('cy', dy);
+  dot.setAttribute('r', dotR);
+  dot.setAttribute('fill', '#e94560');
+  dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', Math.max(1, 1.5 * viewScale));
+  dot.setAttribute('pointer-events', 'none');
+  g.appendChild(dot);
+  g.appendChild(hit);
 }
 
 // 노드 가장자리 리사이즈 핸들(8방향) — 크기 조정 모드에서만
@@ -1722,14 +1763,17 @@ let gStart = null, gMoved = false, gKind = null;   // 단일 제스처 시작점
 let lpTimer = null, lpFired = false;   // 롱프레스 타이머
 let swallowClick = false;              // 롱프레스로 연 메뉴 직후의 합성 click 1회 무시
 const MOVE_TOL = 8;                    // 이동 확정 임계값(px)
-// 모바일 노드 제스처: 바로 끌면 화면이동, 0.5초 잡았다 끌면 노드이동, 잡았다 떼면 메뉴
-let armTimer = null, armed = false, nodeArmId = null;
-const NODE_HOLD_MS = 500;
+// 모바일 노드 제스처: 바로 끌면 화면이동, 0.5초 잡으면 무장(끌면 노드이동), 계속 잡으면 메뉴 자동표시
+let armTimer = null, menuTimer = null, armed = false, armDragStarted = false, nodeArmId = null;
+const NODE_HOLD_MS = 500, NODE_MENU_MS = 300, NODE_DRAG_TOL = 14;  // 무장 0.5s, 메뉴 자동 +0.3s, 드래그 임계 14px
 let currentEdge = null;                // 라인(에지) 위에서 시작한 제스처 정보
 let marqueeArmed = false;              // 메뉴 '사각 선택' → 다음 드래그 한 번만 박스 선택(주로 모바일)
 
 function clearLP() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } }
-function clearArm() { if (armTimer) { clearTimeout(armTimer); armTimer = null; } }
+function clearArm() {                   // 타이머만 정리(armDragStarted는 finishGesture에서 판정에 쓰므로 보존)
+  if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+  if (menuTimer) { clearTimeout(menuTimer); menuTimer = null; }
+}
 
 // 빈 화면 메뉴 '사각 선택' — 다음 한 번의 드래그로 박스 선택
 function menuRectSelect() {
@@ -1760,7 +1804,7 @@ function startLP(cb) {
 }
 
 function beginPinch() {
-  clearLP(); clearArm(); armed = false; nodeArmId = null;
+  clearLP(); clearArm(); armed = false; armDragStarted = false; nodeArmId = null;
   isDragging = false; dragNodeId = null; isPanning = false; isMarquee = false;
   dragResize = null; dragPivot = null;
   document.getElementById('marquee').style.display = 'none';
@@ -1823,9 +1867,9 @@ function onNodePointerDown(e, id) {
   render();
   isPanning = true;                            // 기본: 화면 팬 후보(바로 움직이면 팬)
   panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
-  nodeArmId = id; armed = false;
+  nodeArmId = id; armed = false; armDragStarted = false;
   clearArm();
-  armTimer = setTimeout(() => {                // 0.5초 가만히 잡고 있으면 노드 드래그로 전환
+  armTimer = setTimeout(() => {                // 0.5초 가만히 잡고 있으면 노드 드래그로 무장
     armTimer = null;
     if (gMoved) return;                        // 그 사이 움직였으면(=팬) 무장 안 함
     isPanning = false;
@@ -1836,6 +1880,15 @@ function onNodePointerDown(e, id) {
     armed = true;
     if (navigator.vibrate) navigator.vibrate(25);
     render();
+    // 무장 후에도 계속 가만히 있으면 메뉴 자동 표시(캔버스 메뉴처럼 신뢰성↑)
+    menuTimer = setTimeout(() => {
+      menuTimer = null;
+      if (armDragStarted) return;              // 이미 드래그 시작했으면 메뉴 안 띄움
+      lpFired = true; swallowClick = true;
+      isDragging = false; dragNodeId = null; isPanning = false;
+      onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: gStart.x, clientY: gStart.y }, id);
+      render();
+    }, NODE_MENU_MS);
   }, NODE_HOLD_MS);
 }
 
@@ -1888,6 +1941,12 @@ function onPointerMove(e) {
     gMoved = true; clearLP();               // 8px 넘으면 이동 확정 → 롱프레스 취소
     if (armTimer && !armed) { clearArm(); }  // 무장 전 이동 = 화면 팬 확정(노드 드래그 무장 취소)
   }
+  // 무장된 노드: 손떨림(작은 이동)은 무시하고 14px 넘게 움직여야 실제 드래그로 판정(나머지는 메뉴)
+  if (armed && !armDragStarted && gStart &&
+      (Math.abs(e.clientX - gStart.x) > NODE_DRAG_TOL || Math.abs(e.clientY - gStart.y) > NODE_DRAG_TOL)) {
+    armDragStarted = true;
+    if (menuTimer) { clearTimeout(menuTimer); menuTimer = null; }   // 드래그 시작 → 메뉴 자동표시 취소
+  }
   if (dragResize) {
     const n = getNode(dragResize.id);
     if (n) {
@@ -1918,7 +1977,8 @@ function onPointerMove(e) {
   }
   if (connecting) { drawTempLine(); return; }
   if (isDragging && dragNodeId && !isReadOnly) {
-    if (!gMoved) return;                     // 임계값 넘기 전엔 이동 안 함(탭/더블탭 보호)
+    if (armed) { if (!armDragStarted) return; }   // 무장 드래그: 14px 넘은 뒤에만 이동(손떨림 무시 → 메뉴 보존)
+    else if (!gMoved) return;                      // 데스크톱 즉시 드래그: 8px 임계
     const w = s2w(e.clientX, e.clientY);
     const n = getNode(dragNodeId);
     if (n) {
@@ -1944,23 +2004,29 @@ function finishGesture(e) {
   if (dragResize) { recordHistory(); dragResize = null; }
   if (dragPivot) { recordHistory(); dragPivot = null; }
   if (isMarquee) { isMarquee = false; document.getElementById('marquee').style.display = 'none'; }
-  if (isDragging && gMoved) recordHistory();
-  if (!gMoved && !lpFired) {                  // 탭(이동·롱프레스 없음)
-    if (connecting) { cancelConnecting(); }
-    else if (gKind === 'edge') {              // 라인 탭/클릭 → 삭제
-      if (currentEdge && currentEdge.onDelete) currentEdge.onDelete();
-    }
-    else if (gKind === 'node' && armed) {     // 0.5초 잡았다 움직이지 않고 뗌 → 노드 메뉴(A)
+
+  if (gKind === 'node' && armed) {
+    // 무장된 노드: 실제로 끌었으면 기록, 아니면(=손떨림 포함) 메뉴(지터 무시 → 신뢰성↑)
+    if (armDragStarted) recordHistory();
+    else if (!lpFired) {                      // 메뉴 자동표시가 아직 안 떴으면 떼는 순간 메뉴
       swallowClick = true;
-      onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: e.clientX, clientY: e.clientY }, nodeArmId);
+      onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: gStart ? gStart.x : e.clientX, clientY: gStart ? gStart.y : e.clientY }, nodeArmId);
     }
-    else if (gKind === 'empty') {
-      if (!emptyDoubleFit(e.clientX, e.clientY)) { hideAll(); selectNone(); }
+  } else {
+    if (isDragging && gMoved) recordHistory();
+    if (!gMoved && !lpFired) {                // 탭(이동·롱프레스 없음)
+      if (connecting) { cancelConnecting(); }
+      else if (gKind === 'edge') {            // 라인 탭/클릭 → 삭제
+        if (currentEdge && currentEdge.onDelete) currentEdge.onDelete();
+      }
+      else if (gKind === 'empty') {
+        if (!emptyDoubleFit(e.clientX, e.clientY)) { hideAll(); selectNone(); }
+      }
     }
-    // gKind === 'node'(무장 전): 선택은 pointerdown에서 이미 처리됨
   }
+
   isDragging = false; dragNodeId = null; isPanning = false;
-  armed = false; nodeArmId = null; currentEdge = null;
+  armed = false; armDragStarted = false; nodeArmId = null; currentEdge = null;
   gMoved = false; gStart = null; gKind = null;
   render();
 }
@@ -1972,7 +2038,7 @@ function onPointerUp(e) {
   if (pinch) {                                // 핀치 중 손가락 하나 뗌
     if (ptrs.size < 2) pinch = null;
     isDragging = false; dragNodeId = null; isPanning = false; gKind = null; gStart = null;
-    clearLP(); clearArm(); armed = false; nodeArmId = null;
+    clearLP(); clearArm(); armed = false; armDragStarted = false; nodeArmId = null;
     if (ptrs.size === 0) render();
     return;
   }
@@ -1983,7 +2049,7 @@ function onPointerUp(e) {
 
 function onPointerCancel(e) {
   ptrs.delete(e.pointerId);
-  clearLP(); clearArm(); pinch = null; armed = false; nodeArmId = null; currentEdge = null;
+  clearLP(); clearArm(); pinch = null; armed = false; armDragStarted = false; nodeArmId = null; currentEdge = null;
   if (isDragging && gMoved) recordHistory();
   if (dragResize) { recordHistory(); dragResize = null; }
   if (dragPivot) { recordHistory(); dragPivot = null; }
@@ -2013,6 +2079,10 @@ function onNodeRightClick(e, id) {
   // 부모(루트) 노드 포함 모든 노드에서 삭제 항목 표시
   document.getElementById('menu-delete').style.display = 'flex';
   document.getElementById('menu-delete-sep').style.display = 'block';
+  // 링크: 없으면 '삽입', 있으면 '편집'만 표시
+  const hasLink = !!(n && n.link);
+  document.getElementById('menu-link-add').style.display = hasLink ? 'none' : 'flex';
+  document.getElementById('menu-link-edit').style.display = hasLink ? 'flex' : 'none';
   document.getElementById('resize-nodes-check').textContent = resizeNodes ? '☑' : '☐';
   document.getElementById('menu-shape').classList.remove('open');  // 서브메뉴 초기 닫힘
   document.getElementById('menu-select').classList.remove('open');
@@ -2227,6 +2297,38 @@ function openColorPicker(target) {
 }
 function menuColor() { openColorPicker('bg'); }
 function menuTextColor() { openColorPicker('text'); }
+
+// ── 노드 링크 ──
+// URL 정규화: 스킴 없으면 https:// 붙임(mailto: 등 다른 스킴은 그대로)
+function normalizeUrl(u) {
+  u = (u || '').trim();
+  if (!u) return '';
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
+  return u;
+}
+function setNodeLink(id, url) {
+  const n = getNode(id); if (!n) return;
+  const v = normalizeUrl(url);
+  if (v) { if (n.link !== v) { n.link = v; recordHistory(); } showToast(t('msg.linkSet')); }
+  else if (n.link) { delete n.link; recordHistory(); showToast(t('msg.linkRemoved')); }  // 빈칸 제출 = 링크 제거
+  render();
+}
+// 우클릭 메뉴: 링크 삽입 / 편집 — 기존 입력 팝업(promptInput) 재사용(데스크톱·모바일 동일)
+function menuLinkAdd() {
+  hideAll();
+  const id = contextNodeId; if (!id) return;
+  promptInput(t('pr.linkTitle'), '', url => setNodeLink(id, url));
+}
+function menuLinkEdit() {
+  hideAll();
+  const id = contextNodeId, n = getNode(id); if (!n) return;
+  promptInput(t('pr.linkTitle'), n.link || '', url => setNodeLink(id, url));
+}
+// 빨간 점 탭/클릭 → 새 창으로 링크 열기(모바일·데스크톱 동일)
+function openNodeLink(url) {
+  const v = normalizeUrl(url); if (!v) return;
+  window.open(v, '_blank', 'noopener');
+}
 
 // ── EDIT ──
 function startEdit(id) {
