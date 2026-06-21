@@ -392,6 +392,9 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="menuRectSelect()">
     <span class="menu-icon">▦</span> <span class="mtext" data-i18n="menu.rectSelect">사각 선택</span>
   </div>
+  <div class="menu-item" onclick="menuCanvasBg()">
+    <span class="menu-icon">●</span> <span class="mtext" data-i18n="menu.canvasBg">배경 색상</span>
+  </div>
   <div class="menu-sep"></div>
   <div class="menu-item" onclick="menuAllLines('straight')">
     <span class="menu-icon">─</span> <span class="mtext" data-i18n="menu.straightLine">직선 라인</span>
@@ -513,7 +516,10 @@ let nodes = [];
 let selectedId = null;                 // 주(primary) 선택 노드 — 단일 동작용
 let selectedIds = new Set();           // 다중 선택 집합(하이라이트·이동·삭제의 기준)
 let contextNodeId = null;
-let colorTarget = 'bg';                 // 색상 피커 대상: 'bg'(배경) | 'text'(글자)
+let colorTarget = 'bg';                 // 색상 피커 대상: 'bg'(노드배경) | 'text'(글자) | 'canvas'(화면배경)
+const DEFAULT_BG = '#1a1a2e';
+let bgColor = DEFAULT_BG;               // 화면(캔버스) 배경색 — 맵에 저장됨
+function applyBg() { document.body.style.background = bgColor || DEFAULT_BG; }
 let isReadOnly = false;
 let legacyReadOnly = false;            // 레거시 압축 공유 링크 = 항상 읽기 전용(토큰 무관)
 let displayLang = 'orig';              // 노드 문구 표시 언어: 'orig'(원문) | 'ko' | 'en' | 'ja' — UI 언어와 무관
@@ -661,7 +667,7 @@ Object.assign(I18N.ko, {
   'menu.shape':'노드 형태','menu.shapeRect':'네모','menu.shapeRound':'둥근 네모','menu.shapeCircle':'원형',
   'menu.nodeColor':'노드 색상','menu.resize':'노드 크기 조정','menu.delete':'삭제',
   'menu.selectNodes':'노드 선택','menu.selChildren':'자식 노드','menu.selAll':'모든 노드',
-  'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집',
+  'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.canvasBg':'배경 색상','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집',
   'menu.linkAdd':'링크 삽입','menu.linkEdit':'링크 편집'
 });
 Object.assign(I18N.en, {
@@ -670,7 +676,7 @@ Object.assign(I18N.en, {
   'menu.shape':'Node shape','menu.shapeRect':'Rectangle','menu.shapeRound':'Rounded','menu.shapeCircle':'Circle',
   'menu.nodeColor':'Node color','menu.resize':'Resize nodes','menu.delete':'Delete',
   'menu.selectNodes':'Select nodes','menu.selChildren':'Child nodes','menu.selAll':'All nodes',
-  'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines',
+  'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.canvasBg':'Background color','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines',
   'menu.linkAdd':'Insert link','menu.linkEdit':'Edit link'
 });
 function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
@@ -853,7 +859,10 @@ const COLORS = [
   '#e94560','#e8394a','#c0392b',
   '#0f3460','#118ab2','#26c6da',
   '#533483','#7c4dff','#9c27b0',
-  '#06d6a0','#ffd166','#ff6d00'
+  '#06d6a0','#ffd166','#ff6d00',
+  '#000000','#54ef00','#3175ff',
+  '#ff9ff7','#7a56ff','#ff0000',
+  '#ff00a2','#5a66ff'
 ];
 
 // 배경 밝기에 따라 글자색 자동 선택(밝은 노드는 어두운 글자)
@@ -1048,6 +1057,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function initDefault() {
   nodes = [{ id: nid(), text: '중심 주제', x: 0, y: 0, color: '#e94560', parentId: null }];
   links = [];
+  bgColor = DEFAULT_BG; applyBg();
 }
 
 function nid() { return 'n' + (idCounter++); }
@@ -1724,7 +1734,7 @@ function openCanvasMenuAt(cx, cy) {
   document.getElementById('canvas-edit-lines-check').textContent = editLines ? '☑' : '☐';
   document.getElementById('canvas-resize-check').textContent = resizeNodes ? '☑' : '☐';
   const m = document.getElementById('canvas-menu');
-  const mw = 190, mh = 270;
+  const mw = 190, mh = 310;
   let x = cx, y = cy;
   if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
   if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
@@ -2262,9 +2272,9 @@ function menuCreateNode() {
   setTimeout(() => startEdit(node.id), 30);
 }
 
-function openColorPicker(target) {
+function openColorPicker(target, anchorId) {
   colorTarget = target;
-  const menu = document.getElementById('context-menu');
+  const menu = document.getElementById(anchorId || 'context-menu');
   const picker = document.getElementById('color-picker');
   document.getElementById('text-color-auto').style.display = (target === 'text') ? 'block' : 'none';
   picker.style.left = menu.style.left;
@@ -2274,6 +2284,7 @@ function openColorPicker(target) {
 }
 function menuColor() { openColorPicker('bg'); }
 function menuTextColor() { openColorPicker('text'); }
+function menuCanvasBg() { openColorPicker('canvas', 'canvas-menu'); }   // 빈 화면 메뉴 위치에 팔레트 표시
 
 // ── 노드 링크 ──
 // URL 정규화: 스킴 없으면 https:// 붙임(mailto: 등 다른 스킴은 그대로)
@@ -2370,6 +2381,10 @@ function cancelEdit() {
 
 // ── COLOR PICKER ──
 function applyColor(c) {
+  if (colorTarget === 'canvas') {                 // 배경 색상
+    if (bgColor !== c) { bgColor = c; applyBg(); recordHistory(); }
+    hideAll(); return;
+  }
   const targets = targetNodes();
   let changed = false;
   targets.forEach(n => {
@@ -2878,12 +2893,13 @@ function updateReadonlyBanner() {
 }
 
 // ── SAVE / LOAD ──
-function getMapData() { return { nodes, links, idCounter }; }
+function getMapData() { return { nodes, links, idCounter, bg: bgColor }; }
 
 function applyMapData(data) {
   nodes = data.nodes;
   links = data.links || [];
   idCounter = data.idCounter || 100;
+  bgColor = data.bg || DEFAULT_BG; applyBg();   // 맵에 저장된 배경색 복원(없으면 기본)
 }
 
 function saveToLocal() {
