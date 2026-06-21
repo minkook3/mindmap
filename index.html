@@ -2461,8 +2461,8 @@ function initColorPicker() {
   const custom = document.createElement('div');
   custom.className = 'swatch swatch-custom';
   custom.title = '직접 선택';
-  // 30°마다 채운 HSL 무지개 → 탁한 띠 없이 매끄럽게 원을 꽉 채움
-  custom.style.background = 'conic-gradient(' +
+  // 컬러휠: HSL 무지개(conic) 위에 흰색 중심 radial을 덮어 가운데는 흰색→가장자리로 채도↑
+  custom.style.background = 'radial-gradient(circle at center, #fff 0%, rgba(255,255,255,0) 70%), conic-gradient(' +
     Array.from({ length: 13 }, (_, i) => 'hsl(' + (i * 30) + ' 100% 50%)').join(',') + ')';
   custom.onclick = openCustomPicker;
   picker.appendChild(custom);
