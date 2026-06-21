@@ -1289,11 +1289,15 @@ function addLinkDot(g, n, geom, s) {
   const hit = document.createElementNS(NS, 'circle');
   hit.setAttribute('cx', dx); hit.setAttribute('cy', dy);
   hit.setAttribute('r', Math.max(14, dotR * 2.2));
-  hit.setAttribute('fill', 'transparent');
+  hit.setAttribute('fill', '#000');
+  hit.setAttribute('fill-opacity', '0');         // 보이진 않지만 확실히 클릭/터치 잡힘
+  hit.setAttribute('pointer-events', 'all');
   hit.style.cursor = 'pointer';
   const url = n.link;
-  hit.addEventListener('pointerdown', e => e.stopPropagation());   // 노드 드래그/제스처로 번지지 않게
-  hit.addEventListener('click', e => { e.stopPropagation(); openNodeLink(url); });
+  // 노드 드래그/제스처로 번지지 않게 막고, 떼는 순간 링크 열기(마우스·터치 공용)
+  hit.addEventListener('pointerdown', e => { e.stopPropagation(); });
+  hit.addEventListener('pointerup', e => { e.stopPropagation(); openNodeLink(url); });
+  hit.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); });
   // 보이는 빨간 점
   const dot = document.createElementNS(NS, 'circle');
   dot.setAttribute('cx', dx); dot.setAttribute('cy', dy);
@@ -2327,7 +2331,10 @@ function menuLinkEdit() {
 // 빨간 점 탭/클릭 → 새 창으로 링크 열기(모바일·데스크톱 동일)
 function openNodeLink(url) {
   const v = normalizeUrl(url); if (!v) return;
-  window.open(v, '_blank', 'noopener');
+  // anchor 클릭 방식 — window.open(noopener)이 일부 브라우저에서 막히는 문제 회피
+  const a = document.createElement('a');
+  a.href = v; a.target = '_blank'; a.rel = 'noopener noreferrer';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 // ── EDIT ──
