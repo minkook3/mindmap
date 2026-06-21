@@ -1094,20 +1094,9 @@ function render() {
     svg.appendChild(g);
 
     if (!isReadOnly) {
-      g.addEventListener('mousedown', e => { if (e.button === 0 && !spaceDown) onNodeDragStart(e, n.id); });
+      g.addEventListener('pointerdown', e => onNodePointerDown(e, n.id));
       g.addEventListener('contextmenu', e => { e.preventDefault(); if (lastPointerTouch) return; onNodeRightClick(e, n.id); });
-      g.addEventListener('touchstart', e => onNodeTouchStart(e, n.id), { passive: false });
     }
-    g.addEventListener('click', e => {
-      e.stopPropagation();
-      if (connecting) {
-        const from = connectFromId;
-        connecting = false; connectFromId = null; document.body.style.cursor = '';
-        if (n.id !== from) createLink(from, n.id); else render();
-        return;
-      }
-      // 선택은 mousedown(onNodeDragStart)에서 처리 — 여기선 연결 모드만
-    });
   });
 
   if (connecting) drawTempLine();
@@ -1127,9 +1116,13 @@ function addResizeHandles(g, n, geom, s) {
     r.setAttribute('stroke', '#ffd166'); r.setAttribute('stroke-width', 2);
     let cur = (hx && hy) ? (hx === hy ? 'nwse-resize' : 'nesw-resize') : (hx ? 'ew-resize' : 'ns-resize');
     r.style.cursor = cur;
-    r.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
+    r.addEventListener('pointerdown', e => {
+      if (e.button === 2) return;
       e.stopPropagation();
+      lastPointerTouch = (e.pointerType === 'touch');
+      const sv = document.getElementById('canvas');
+      try { sv.setPointerCapture(e.pointerId); } catch (_) {}
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
       dragResize = { id: n.id, hx, hy };
     });
     g.appendChild(r);
@@ -1286,9 +1279,13 @@ function makeEdge(svg, sNode, eNode, color, opts) {
       circ.style.cursor = 'grab';
       circ.addEventListener('mouseenter', () => { circ.setAttribute('r', 9); circ.setAttribute('fill', '#0f3460'); });
       circ.addEventListener('mouseleave', () => { circ.setAttribute('r', 7); circ.setAttribute('fill', '#16213e'); });
-      circ.addEventListener('mousedown', e => {
-        if (e.button !== 0) return;
+      circ.addEventListener('pointerdown', e => {
+        if (e.button === 2) return;
         e.stopPropagation();
+        lastPointerTouch = (e.pointerType === 'touch');
+        const sv = document.getElementById('canvas');
+        try { sv.setPointerCapture(e.pointerId); } catch (_) {}
+        ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
         dragPivot = { owner, index: idx };
       });
       svg.appendChild(circ);
@@ -1420,95 +1417,7 @@ function emptyDoubleFit(x, y) {
 function setupEvents() {
   const svg = document.getElementById('canvas');
 
-  svg.addEventListener('mousedown', e => {
-    if (isReadOnly) {
-      // 빈 곳 더블클릭 → 화면 맞춤(뷰어 모드에서도 가능)
-      if (e.button === 0 && (e.target === svg || e.target.tagName === 'svg') && emptyDoubleFit(e.clientX, e.clientY)) return;
-      // 읽기 전용: 좌클릭 드래그로도 화면 이동 가능하게
-      if (e.button === 0 || e.button === 1) { isPanning = true; panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale }; }
-      return;
-    }
-    // 화면 이동(팬): 가운데 버튼, 또는 Space+좌클릭 — 노드 위에서도 동작
-    if (e.button === 1 || (e.button === 0 && spaceDown)) {
-      e.preventDefault();
-      isPanning = true;
-      panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
-      return;
-    }
-    // 빈 공간 좌클릭 드래그: 선택 박스(마키)
-    if (e.button === 0 && (e.target === svg || e.target.tagName === 'svg')) {
-      if (emptyDoubleFit(e.clientX, e.clientY)) return;   // 빈 곳 더블클릭 → 화면 맞춤
-      hideAll();
-      if (!e.shiftKey) selectNone();
-      marqueeBase = new Set(selectedIds);
-      isMarquee = true;
-      marqueeStart = { x: e.clientX, y: e.clientY };
-      updateMarquee(e);
-      render();
-    }
-  });
-
-  window.addEventListener('mousemove', e => {
-    mouseScreen = { x: e.clientX, y: e.clientY };
-    if (dragResize) {
-      const n = getNode(dragResize.id);
-      if (n) {
-        const w = s2w(e.clientX, e.clientY);
-        const g0 = nodeGeom(n);
-        // 다중 선택 + 잡은 노드가 그 안에 있으면 선택된 노드 전부 동일 크기로 조정
-        const multi = selectedIds.size > 1 && selectedIds.has(dragResize.id);
-        if (dragResize.hx !== 0) {
-          const fixedX = n.x - dragResize.hx * g0.baseW / 2;
-          const newW = Math.max(Math.abs(w.x - fixedX), g0.contentWbase);
-          n.x = fixedX + dragResize.hx * newW / 2; n.w = newW;
-          if (multi) selectedIds.forEach(id => { if (id !== n.id) { const m = getNode(id); if (m) m.w = newW; } });
-        }
-        if (dragResize.hy !== 0) {
-          const fixedY = n.y - dragResize.hy * g0.baseH / 2;
-          const newH = Math.max(Math.abs(w.y - fixedY), g0.contentHbase);
-          n.y = fixedY + dragResize.hy * newH / 2; n.h = newH;
-          if (multi) selectedIds.forEach(id => { if (id !== n.id) { const m = getNode(id); if (m) m.h = newH; } });
-        }
-        render();
-      }
-      return;
-    }
-    if (dragPivot) {
-      const w = s2w(e.clientX, e.clientY);
-      dragPivot.owner.ctrl[dragPivot.index] = { x: w.x, y: w.y };
-      render();
-      return;
-    }
-    if (connecting) { drawTempLine(); return; }
-    if (isMarquee) { updateMarquee(e); return; }
-    if (isDragging && dragNodeId) {
-      const w = s2w(e.clientX, e.clientY);
-      const n = getNode(dragNodeId);
-      if (n) {
-        const nx = w.x - dragOffset.x, ny = w.y - dragOffset.y;
-        if (selectedIds.size > 1 && selectedIds.has(dragNodeId)) {
-          // 다중 선택 그룹 이동: 잡은 노드의 이동량만큼 전체 평행 이동
-          const dx = nx - n.x, dy = ny - n.y;
-          selectedIds.forEach(id => { const m = getNode(id); if (m) { m.x += dx; m.y += dy; } });
-        } else {
-          n.x = nx; n.y = ny;
-        }
-        dragMoved = true; render();
-      }
-    } else if (isPanning) {
-      viewX = (e.clientX - panStart.x) / viewScale;
-      viewY = (e.clientY - panStart.y) / viewScale;
-      render();
-    }
-  });
-
-  window.addEventListener('mouseup', () => {
-    if (dragResize) { recordHistory(); dragResize = null; }
-    if (dragPivot) { recordHistory(); dragPivot = null; }
-    if (isMarquee) { isMarquee = false; document.getElementById('marquee').style.display = 'none'; }
-    if (isDragging && dragMoved) recordHistory();
-    isDragging = false; dragNodeId = null; isPanning = false; dragMoved = false;
-  });
+  // 드래그·팬·마키·리사이즈·피봇은 모두 Pointer 이벤트(setupTouch)에서 일원화 처리
 
   svg.addEventListener('wheel', e => {
     e.preventDefault();
@@ -1537,7 +1446,10 @@ function setupEvents() {
   document.getElementById('color-picker').addEventListener('click', e => e.stopPropagation());
   document.getElementById('tb-dropdown').addEventListener('click', e => e.stopPropagation());
 
-  document.addEventListener('click', () => { hideAll(); if (connecting) { cancelConnecting(); render(); } });
+  document.addEventListener('click', () => {
+    if (swallowClick) { swallowClick = false; return; }   // 롱프레스로 연 메뉴 직후의 합성 click 1회 무시
+    hideAll(); if (connecting) { cancelConnecting(); render(); }
+  });
 
   // 모달 바깥(배경) 클릭 시 닫기
   document.querySelectorAll('.modal-overlay').forEach(ov => {
@@ -1632,28 +1544,70 @@ function openCanvasMenuAt(cx, cy) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  TOUCH — 마우스와 동시 지원(자동 적응). 모드 전환 불필요.
-//   · 한 손가락 드래그: 노드 위면 이동, 빈 곳이면 화면 팬
+//  POINTER — 마우스·터치·펜 통합. setPointerCapture로 드래그가
+//  render()·손가락 이탈·브라우저 제스처에도 끊기지 않음.
+//   · 한 손가락/좌클릭: 노드 위면 이동, 빈 곳이면 팬(마우스 빈 곳은 마키 선택)
 //   · 두 손가락: 핀치 줌 + 팬
-//   · 길게 누르기(0.5s): 우클릭 메뉴(노드/빈 캔버스)
-//   · 탭: 선택/연결, 더블탭: 텍스트 편집
+//   · 길게 누르기(1s, 움직이기 전): 메뉴(노드/빈 캔버스)
+//   · 탭: 선택/연결, 더블탭: 노드는 편집·빈 곳은 화면 맞춤
+//   · 8px 이상 움직이면 그 순간 이동 확정 → 롱프레스 취소(메뉴 안 뜸)
 // ══════════════════════════════════════════════════════════
-let touchState = null, longPressTimer = null, longPressFired = false;
-let touchMoved = false, touchStartPos = null, touchOnCanvas = false;
-let lastPointerTouch = false;   // 마지막 입력이 터치였는지(네이티브 우클릭 메뉴 차단용)
-const LONGPRESS_MS = 1000, TOUCH_MOVE_TOL = 10;   // 1초 이상 가만히 누르면 메뉴, 그 안에 움직이면 이동
+let lastPointerTouch = false;          // 마지막 입력이 터치였는지(네이티브 우클릭 메뉴 차단용)
+const ptrs = new Map();                // 활성 포인터 pointerId -> {x,y} (핀치 판정)
+let pinch = null;                      // {startDist, startScale, lastCenter}
+let gStart = null, gMoved = false, gKind = null;   // 단일 제스처 시작점/이동여부/종류('node'|'empty')
+let lpTimer = null, lpFired = false;   // 롱프레스 타이머
+let swallowClick = false;              // 롱프레스로 연 메뉴 직후의 합성 click 1회 무시
+const MOVE_TOL = 8;                    // 이동 확정 임계값(px)
 
-function tDist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-function tMid(a, b) { return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
-function clearLongPress() { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }
+function clearLP() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } }
+function startLP(cb) {
+  clearLP(); lpFired = false;
+  lpTimer = setTimeout(() => {
+    lpTimer = null;
+    if (gMoved) return;                // 이미 움직였으면 메뉴 안 띄움
+    lpFired = true; swallowClick = true;
+    isDragging = false; dragNodeId = null; isPanning = false; isMarquee = false;
+    document.getElementById('marquee').style.display = 'none';
+    cb();
+  }, 1000);
+}
 
-// 노드에서 시작하는 터치(render에서 각 노드에 연결)
-function onNodeTouchStart(e, id) {
-  if (e.touches.length !== 1) return;   // 두 손가락은 캔버스 핀치로
-  lastPointerTouch = true;
-  e.stopPropagation(); e.preventDefault();
-  const t = e.touches[0];
-  // 연결 모드: 탭으로 연결 완료(클릭 핸들러와 동일 로직)
+function beginPinch() {
+  clearLP();
+  isDragging = false; dragNodeId = null; isPanning = false; isMarquee = false;
+  dragResize = null; dragPivot = null;
+  document.getElementById('marquee').style.display = 'none';
+  const [a, b] = [...ptrs.values()];
+  pinch = { startDist: Math.hypot(a.x - b.x, a.y - b.y) || 1, startScale: viewScale, lastCenter: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+}
+function updatePinch() {
+  const svg = document.getElementById('canvas');
+  const [a, b] = [...ptrs.values()];
+  const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+  const c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const r = svg.getBoundingClientRect();
+  const newScale = Math.max(0.15, Math.min(3, pinch.startScale * (d / pinch.startDist)));
+  const mx = c.x - r.left - r.width / 2, my = c.y - r.top - r.height / 2;
+  viewX -= mx / viewScale; viewY -= my / viewScale;
+  viewScale = newScale;
+  viewX += mx / viewScale; viewY += my / viewScale;
+  viewX += (c.x - pinch.lastCenter.x) / viewScale;
+  viewY += (c.y - pinch.lastCenter.y) / viewScale;
+  pinch.lastCenter = c;
+  render();
+}
+
+// 노드에서 시작하는 포인터(render에서 각 노드에 연결)
+function onNodePointerDown(e, id) {
+  lastPointerTouch = (e.pointerType === 'touch');
+  if (e.button === 2) return;                 // 우클릭은 contextmenu가 처리
+  e.stopPropagation();
+  const svg = document.getElementById('canvas');
+  try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2) { beginPinch(); return; }   // 노드 위에서 두 번째 손가락 → 핀치
+  // 연결 모드: 탭으로 연결
   if (connecting) {
     const from = connectFromId;
     connecting = false; connectFromId = null; document.body.style.cursor = '';
@@ -1661,127 +1615,152 @@ function onNodeTouchStart(e, id) {
     return;
   }
   hideAll();
-  touchMoved = false; longPressFired = false; touchOnCanvas = false;
-  touchStartPos = { x: t.clientX, y: t.clientY };
-  clearLongPress();
-  longPressTimer = setTimeout(() => {
-    longPressTimer = null; longPressFired = true;
-    if (!touchMoved) {
-      isDragging = false; dragNodeId = null;
-      onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: t.clientX, clientY: t.clientY }, id);
-    }
-  }, LONGPRESS_MS);
+  gStart = { x: e.clientX, y: e.clientY }; gMoved = false; gKind = 'node';
   if (isReadOnly) return;
-  // 기존 드래그 시작 로직 재사용(선택 + 더블탭 편집 감지 포함). 터치는 render 생략(제스처 취소 방지)
-  onNodeDragStart({ stopPropagation() {}, preventDefault() {}, button: 0, shiftKey: false, clientX: t.clientX, clientY: t.clientY }, id, true);
+  onNodeDragStart(e, id, false);              // 선택 + 더블탭 편집 + 드래그 초기화(캡처라 render 안전)
+  startLP(() => onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: e.clientX, clientY: e.clientY }, id));
+}
+
+// 빈 곳/배경에서 시작하는 포인터
+function onSvgPointerDown(e) {
+  lastPointerTouch = (e.pointerType === 'touch');
+  if (e.button === 2) return;                 // 우클릭은 contextmenu가 처리
+  const svg = document.getElementById('canvas');
+  try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2) { beginPinch(); return; }
+  isDragging = false; dragNodeId = null;      // 잔류 드래그 제거
+  hideAll();
+  gStart = { x: e.clientX, y: e.clientY }; gMoved = false; gKind = 'empty';
+  const onEmpty = (e.target === svg || e.target.tagName === 'svg');
+  const isMouse = (e.pointerType === 'mouse');
+  // 마우스 좌클릭(편집모드, Space 아님, 빈 곳) → 마키 선택
+  if (!isReadOnly && !connecting && isMouse && e.button === 0 && !spaceDown && onEmpty) {
+    if (!e.shiftKey) selectNone();
+    marqueeBase = new Set(selectedIds);
+    isMarquee = true; marqueeStart = { x: e.clientX, y: e.clientY };
+    updateMarquee(e); render();
+    return;
+  }
+  // 그 외(터치/가운데/Space+좌클릭/읽기전용) → 팬
+  if (!connecting && (e.button === 0 || e.button === 1)) {
+    isPanning = true;
+    panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
+  }
+  // 터치로 빈 곳 길게 누르면 캔버스 메뉴(편집 모드)
+  if (!isMouse && onEmpty && !isReadOnly) startLP(() => openCanvasMenuAt(e.clientX, e.clientY));
+}
+
+function onPointerMove(e) {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  mouseScreen = { x: e.clientX, y: e.clientY };
+  if (pinch && ptrs.size >= 2) { updatePinch(); return; }
+  if (gStart && !gMoved && (Math.abs(e.clientX - gStart.x) > MOVE_TOL || Math.abs(e.clientY - gStart.y) > MOVE_TOL)) {
+    gMoved = true; clearLP();               // 8px 넘으면 이동 확정 → 롱프레스 취소
+  }
+  if (dragResize) {
+    const n = getNode(dragResize.id);
+    if (n) {
+      const w = s2w(e.clientX, e.clientY);
+      const g0 = nodeGeom(n);
+      const multi = selectedIds.size > 1 && selectedIds.has(dragResize.id);
+      if (dragResize.hx !== 0) {
+        const fixedX = n.x - dragResize.hx * g0.baseW / 2;
+        const newW = Math.max(Math.abs(w.x - fixedX), g0.contentWbase);
+        n.x = fixedX + dragResize.hx * newW / 2; n.w = newW;
+        if (multi) selectedIds.forEach(id => { if (id !== n.id) { const m = getNode(id); if (m) m.w = newW; } });
+      }
+      if (dragResize.hy !== 0) {
+        const fixedY = n.y - dragResize.hy * g0.baseH / 2;
+        const newH = Math.max(Math.abs(w.y - fixedY), g0.contentHbase);
+        n.y = fixedY + dragResize.hy * newH / 2; n.h = newH;
+        if (multi) selectedIds.forEach(id => { if (id !== n.id) { const m = getNode(id); if (m) m.h = newH; } });
+      }
+      render();
+    }
+    return;
+  }
+  if (dragPivot) {
+    const w = s2w(e.clientX, e.clientY);
+    dragPivot.owner.ctrl[dragPivot.index] = { x: w.x, y: w.y };
+    render();
+    return;
+  }
+  if (connecting) { drawTempLine(); return; }
+  if (isDragging && dragNodeId && !isReadOnly) {
+    if (!gMoved) return;                     // 임계값 넘기 전엔 이동 안 함(탭/더블탭 보호)
+    const w = s2w(e.clientX, e.clientY);
+    const n = getNode(dragNodeId);
+    if (n) {
+      const nx = w.x - dragOffset.x, ny = w.y - dragOffset.y;
+      if (selectedIds.size > 1 && selectedIds.has(dragNodeId)) {
+        const dx = nx - n.x, dy = ny - n.y;
+        selectedIds.forEach(id => { const m = getNode(id); if (m) { m.x += dx; m.y += dy; } });
+      } else { n.x = nx; n.y = ny; }
+      render();
+    }
+    return;
+  }
+  if (isMarquee) { updateMarquee(e); return; }
+  if (isPanning) {
+    viewX = (e.clientX - panStart.x) / viewScale;
+    viewY = (e.clientY - panStart.y) / viewScale;
+    render();
+  }
+}
+
+function finishGesture(e) {
+  if (dragResize) { recordHistory(); dragResize = null; }
+  if (dragPivot) { recordHistory(); dragPivot = null; }
+  if (isMarquee) { isMarquee = false; document.getElementById('marquee').style.display = 'none'; }
+  if (isDragging && gMoved) recordHistory();
+  if (!gMoved && !lpFired) {                  // 탭(이동·롱프레스 없음)
+    if (connecting) { cancelConnecting(); }
+    else if (gKind === 'empty') {
+      if (!emptyDoubleFit(e.clientX, e.clientY)) { hideAll(); selectNone(); }
+    }
+    // gKind === 'node': 선택은 pointerdown에서 이미 처리됨
+  }
+  isDragging = false; dragNodeId = null; isPanning = false;
+  gMoved = false; gStart = null; gKind = null;
+  render();
+}
+
+function onPointerUp(e) {
+  const svg = document.getElementById('canvas');
+  try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+  ptrs.delete(e.pointerId);
+  if (pinch) {                                // 핀치 중 손가락 하나 뗌
+    if (ptrs.size < 2) pinch = null;
+    isDragging = false; dragNodeId = null; isPanning = false; gKind = null; gStart = null;
+    clearLP();
+    if (ptrs.size === 0) render();
+    return;
+  }
+  clearLP();
+  if (ptrs.size > 0) return;                  // 아직 손가락 남음
+  finishGesture(e);
+}
+
+function onPointerCancel(e) {
+  ptrs.delete(e.pointerId);
+  clearLP(); pinch = null;
+  if (isDragging && gMoved) recordHistory();
+  if (dragResize) { recordHistory(); dragResize = null; }
+  if (dragPivot) { recordHistory(); dragPivot = null; }
+  isDragging = false; dragNodeId = null; isPanning = false; isMarquee = false;
+  document.getElementById('marquee').style.display = 'none';
+  gMoved = false; gStart = null; gKind = null;
+  render();
 }
 
 function setupTouch() {
   const svg = document.getElementById('canvas');
-  // 실제 마우스 입력이면 플래그 해제(데스크톱 우클릭 메뉴는 정상 동작)
-  window.addEventListener('mousedown', () => { lastPointerTouch = false; }, true);
-
-  svg.addEventListener('touchstart', e => {
-    lastPointerTouch = true;
-    if (e.touches.length === 2) {           // 핀치 시작
-      clearLongPress();
-      isDragging = false; dragNodeId = null;
-      const a = e.touches[0], b = e.touches[1];
-      touchState = { mode: 'pinch', startDist: tDist(a, b), startScale: viewScale, lastCenter: tMid(a, b) };
-      e.preventDefault();
-      return;
-    }
-    if (e.touches.length !== 1) return;
-    const t = e.touches[0];
-    e.preventDefault();
-    // 여기 도달 = 노드가 아닌 빈 곳/라인 터치(노드는 stopPropagation). 이전 드래그 잔류 상태를 깨끗이 초기화
-    isDragging = false; dragNodeId = null;
-    touchMoved = false; longPressFired = false;
-    touchStartPos = { x: t.clientX, y: t.clientY };
-    touchOnCanvas = (e.target === svg || e.target.tagName === 'svg');
-    // 한 손가락 드래그 → 팬(노드 위에서도 빈 캔버스에서도, 노드 핸들러가 먼저 stopPropagation)
-    touchState = { mode: 'pan', startX: t.clientX - viewX * viewScale, startY: t.clientY - viewY * viewScale };
-    clearLongPress();
-    if (touchOnCanvas) {
-      longPressTimer = setTimeout(() => {
-        longPressTimer = null; longPressFired = true;
-        if (!touchMoved) { touchState = null; openCanvasMenuAt(t.clientX, t.clientY); }
-      }, LONGPRESS_MS);
-    }
-  }, { passive: false });
-
-  // 이동/끝은 window에 바인딩 — render()로 노드 DOM이 새로 그려져도 드래그가 끊기지 않게
-  window.addEventListener('touchmove', e => {
-    if (e.touches.length === 2 && touchState && touchState.mode === 'pinch') {
-      e.preventDefault(); clearLongPress();
-      const a = e.touches[0], b = e.touches[1];
-      const d = tDist(a, b), c = tMid(a, b);
-      const r = svg.getBoundingClientRect();
-      const newScale = Math.max(0.15, Math.min(3, touchState.startScale * (d / touchState.startDist)));
-      const mx = c.x - r.left - r.width / 2, my = c.y - r.top - r.height / 2;
-      viewX -= mx / viewScale; viewY -= my / viewScale;
-      viewScale = newScale;
-      viewX += mx / viewScale; viewY += my / viewScale;
-      // 두 손가락 중심 이동만큼 팬도 함께
-      viewX += (c.x - touchState.lastCenter.x) / viewScale;
-      viewY += (c.y - touchState.lastCenter.y) / viewScale;
-      touchState.lastCenter = c;
-      render();
-      return;
-    }
-    if (e.touches.length !== 1) return;
-    const t = e.touches[0];
-    if (touchStartPos && (Math.abs(t.clientX - touchStartPos.x) > TOUCH_MOVE_TOL || Math.abs(t.clientY - touchStartPos.y) > TOUCH_MOVE_TOL)) {
-      touchMoved = true; clearLongPress();
-    }
-    if (isDragging && dragNodeId && !isReadOnly) {   // 노드 이동(마우스 mousemove 로직 재사용)
-      e.preventDefault();
-      const w = s2w(t.clientX, t.clientY);
-      const n = getNode(dragNodeId);
-      if (n) {
-        const nx = w.x - dragOffset.x, ny = w.y - dragOffset.y;
-        if (selectedIds.size > 1 && selectedIds.has(dragNodeId)) {
-          const dx = nx - n.x, dy = ny - n.y;
-          selectedIds.forEach(id => { const m = getNode(id); if (m) { m.x += dx; m.y += dy; } });
-        } else { n.x = nx; n.y = ny; }
-        dragMoved = true; render();
-      }
-      return;
-    }
-    if (touchState && touchState.mode === 'pan' && touchMoved) {   // 화면 팬
-      e.preventDefault();
-      viewX = (t.clientX - touchState.startX) / viewScale;
-      viewY = (t.clientY - touchState.startY) / viewScale;
-      render();
-    }
-  }, { passive: false });
-
-  window.addEventListener('touchend', e => {
-    clearLongPress();
-    if (e.touches.length > 0) return;   // 아직 손가락이 남아있음
-    // 드래그/리사이즈 마무리(마우스 mouseup 로직 재사용)
-    if (dragResize) { recordHistory(); dragResize = null; }
-    if (dragPivot) { recordHistory(); dragPivot = null; }
-    if (isDragging && dragMoved) recordHistory();
-    // 빈 캔버스 탭(이동·롱프레스 없음): 더블탭이면 화면 맞춤, 단일 탭이면 선택 해제
-    if (touchOnCanvas && !touchMoved && !longPressFired && !connecting) {
-      const p = touchStartPos || { x: 0, y: 0 };
-      if (!emptyDoubleFit(p.x, p.y)) { hideAll(); selectNone(); }
-    }
-    isDragging = false; dragNodeId = null; isPanning = false; dragMoved = false;
-    touchState = null; touchOnCanvas = false;
-    render();   // 터치 종료 시 한 번 그려 선택/이동 결과 반영(시작 때 생략한 render 보정)
-  }, { passive: false });
-
-  // 제스처가 브라우저에 의해 취소돼도(touchcancel) 드래그 상태를 깨끗이 정리 — 잔류 isDragging 방지
-  window.addEventListener('touchcancel', () => {
-    clearLongPress();
-    if (isDragging && dragMoved) recordHistory();
-    isDragging = false; dragNodeId = null; isPanning = false; dragMoved = false;
-    dragResize = null; dragPivot = null;
-    touchState = null; touchOnCanvas = false;
-    render();
-  }, { passive: false });
+  // 마우스·터치·펜 통합: 캡처 덕분에 이동/끝 이벤트가 svg로 모이므로 svg에만 바인딩
+  svg.addEventListener('pointerdown', onSvgPointerDown);
+  svg.addEventListener('pointermove', onPointerMove);
+  svg.addEventListener('pointerup', onPointerUp);
+  svg.addEventListener('pointercancel', onPointerCancel);
 }
 
 // ── CONTEXT MENU ──
