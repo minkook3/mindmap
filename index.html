@@ -14,7 +14,9 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-seri
   padding: 0 8px; gap: 4px; z-index: 100;
   box-shadow: 0 1px 4px rgba(0,0,0,0.35);
   flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;            /* 하단 얇은 스크롤바(회색줄) 숨김 */
 }
+#toolbar::-webkit-scrollbar { display: none; }
 /* 좁은 화면에서 버튼 글씨가 세로로 줄바꿈되지 않게: 줄바꿈 금지 + 폭 축소 금지 */
 #toolbar > * { flex: 0 0 auto; }
 #toolbar button, .toolbar-title, #cloud-status { white-space: nowrap; }
@@ -25,6 +27,19 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-seri
 .icon-btn { padding: 3px 7px; display: inline-flex; align-items: center; justify-content: center; }
 .icon-btn svg { width: 16px; height: 16px; display: block; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .btn-share.icon-btn { color: #fff; }
+/* 모바일 툴바 드롭다운 */
+.tb-menu-btn { display: none; }            /* 데스크톱에선 숨김 */
+#tb-dropdown {
+  position: fixed; top: 36px; left: 8px; min-width: 190px;
+  background: #16213e; border: 1px solid #2a5a9a; border-radius: 8px;
+  padding: 4px 0; z-index: 250; box-shadow: 0 6px 20px rgba(0,0,0,0.6); display: none;
+}
+#tb-dropdown .menu-item { padding: 12px 18px; font-size: 14px; }
+/* 좁은 화면(모바일): 작업 외 버튼은 드롭다운으로, Undo/Redo만 노출 */
+@media (max-width: 700px) {
+  .tb-collapsible { display: none !important; }
+  .tb-menu-btn { display: inline-flex !important; }
+}
 .toolbar-title { color: #e94560; font-weight: bold; font-size: 13px; margin-right: 4px; letter-spacing: 0.5px; }
 .toolbar-sep { width: 1px; height: 16px; background: #1a4a80; margin: 0 3px; }
 
@@ -195,15 +210,20 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 
 .map-list { display: flex; flex-direction: column; gap: 8px; }
 .map-row {
-  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  background: #0f1b33; border: 1px solid #1a3a66; border-radius: 8px;
+  display: flex; align-items: center; gap: 10px; padding: 12px 12px;
+  background: #0f1b33; border: 1px solid #1a3a66; border-radius: 8px; cursor: pointer;
 }
-.map-row.active { border-color: #e94560; background: #1a1330; }
-.map-row .map-name { flex: 1; color: #fff; font-size: 14px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-row:hover { border-color: #2a5a9a; }
+.map-row.active { border-color: #e94560; }            /* 현재 열려있는 맵 */
+.map-row.sel { border-color: #1f8fbf; background: #14243f; }  /* 선택된 맵 */
+.map-row .map-name { flex: 1; color: #fff; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-row .map-meta { color: #6a7a99; font-size: 11px; flex: none; }
-.map-row .row-btn { padding: 4px 9px; font-size: 12px; background: #16294a; border-color: #21406e; }
-.map-row .row-btn.danger { color: #ff8a9b; border-color: #4a2030; }
 .map-empty { color: #6a7a99; font-size: 13px; text-align: center; padding: 28px 0; }
+/* 하단 공용 액션 버튼 바 */
+.dash-actions { display: flex; gap: 6px; padding: 10px 20px 0; }
+.dash-actions button { flex: 1; padding: 9px 4px; font-size: 13px; white-space: nowrap; }
+.dash-actions button.danger { color: #ff8a9b; border-color: #4a2030; }
+.dash-actions button:disabled { opacity: 0.4; }
 
 .field { margin-bottom: 14px; }
 .field label { display: block; color: #9fb3cc; font-size: 12px; margin-bottom: 5px; }
@@ -223,13 +243,16 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 <div id="toolbar">
   <span class="toolbar-title">MindMap</span>
   <div class="toolbar-sep"></div>
-  <button class="btn-cloud icon-btn" onclick="openDashboard()" data-i18n-title="tb.mapsT" title="내 맵" aria-label="My Maps">
+  <button class="icon-btn tb-menu-btn" onclick="toggleTbMenu(event)" title="메뉴" aria-label="Menu">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <button class="btn-cloud icon-btn tb-collapsible" onclick="openDashboard()" data-i18n-title="tb.mapsT" title="내 맵" aria-label="My Maps">
     <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
   </button>
-  <button class="btn-cloud icon-btn" onclick="cloudSave()" data-i18n-title="tb.saveT" title="GitHub에 저장 (Ctrl+S)" aria-label="Save">
+  <button class="btn-cloud icon-btn tb-collapsible" onclick="cloudSave()" data-i18n-title="tb.saveT" title="GitHub에 저장 (Ctrl+S)" aria-label="Save">
     <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
   </button>
-  <button class="icon-btn" onclick="openSettings()" data-i18n-title="tb.settingsT" title="레포·토큰 설정" aria-label="Settings">
+  <button class="icon-btn tb-collapsible" onclick="openSettings()" data-i18n-title="tb.settingsT" title="레포·토큰 설정" aria-label="Settings">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H8a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
   </button>
   <div class="toolbar-sep"></div>
@@ -240,9 +263,17 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
     <svg viewBox="0 0 24 24"><path d="M21 7v6h-6"/><path d="M20.5 13a9 9 0 1 1-2.1-9.4L21 7"/></svg>
   </button>
   <span id="cloud-status"><span class="dot"></span><span class="txt">로컬 작업 중</span></span>
-  <button class="btn-share icon-btn" onclick="shareMap()" data-i18n-title="tb.share" title="🔗 공유 링크 복사" aria-label="Copy share link">
+  <button class="btn-share icon-btn tb-collapsible" onclick="shareMap()" data-i18n-title="tb.share" title="🔗 공유 링크 복사" aria-label="Copy share link">
     <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
   </button>
+</div>
+
+<!-- 모바일 툴바 드롭다운(작업 외 동작 모음) -->
+<div id="tb-dropdown">
+  <div class="menu-item" onclick="tbRun(openDashboard)"><span class="mtext" data-i18n="tbm.maps">내 맵 열기</span></div>
+  <div class="menu-item" onclick="tbRun(cloudSave)"><span class="mtext" data-i18n="tbm.save">GitHub에 저장</span></div>
+  <div class="menu-item" onclick="tbRun(openSettings)"><span class="mtext" data-i18n="tbm.settings">설정</span></div>
+  <div class="menu-item" onclick="tbRun(shareMap)"><span class="mtext" data-i18n="tbm.share">공유 링크 복사</span></div>
 </div>
 
 <div id="readonly-badge" data-i18n="badge.readonly">읽기 전용</div>
@@ -336,6 +367,13 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
     </div>
     <div class="modal-body">
       <div class="map-list" id="map-list"><div class="map-empty">불러오는 중…</div></div>
+    </div>
+    <div class="dash-actions">
+      <button id="da-open" onclick="daOpen()" data-i18n="dash.open" disabled>열기</button>
+      <button id="da-link" onclick="daLink()" data-i18n="dash.link" disabled>링크</button>
+      <button id="da-rename" onclick="daRename()" data-i18n="dash.rename" disabled>이름</button>
+      <button id="da-dup" onclick="daDup()" data-i18n="dash.dup" disabled>복제</button>
+      <button id="da-del" class="danger" onclick="daDel()" data-i18n="dash.del" disabled>삭제</button>
     </div>
     <div class="modal-foot">
       <button onclick="refreshDashboard()" data-i18n="dash.refresh">↻ 새로고침</button>
@@ -477,8 +515,11 @@ const I18N = {
     'hint.bar':'빈 공간 드래그: 선택 박스 &nbsp;|&nbsp; 가운데/Space 드래그: 화면 이동 &nbsp;|&nbsp; 휠: 확대/축소 &nbsp;|&nbsp; 더블클릭: 편집 &nbsp;|&nbsp; 우클릭: 메뉴 &nbsp;|&nbsp; 단축키는 ⚙ 설정 참고',
     'dash.title':'📁 내 맵', 'dash.refresh':'↻ 새로고침', 'dash.new':'＋ 새 맵 만들기',
     'dash.loading':'불러오는 중…', 'dash.empty':'저장된 맵이 없습니다. “새 맵 만들기”로 시작하세요.',
+    'dash.open':'열기', 'dash.link':'링크', 'dash.rename':'이름', 'dash.dup':'복제', 'dash.del':'삭제',
+    'dash.needToken':'목록을 읽으려면 권한이 필요할 수 있습니다. 설정에서 토큰을 입력해 보세요.', 'dash.loadErr':'목록을 불러오지 못했습니다:',
     'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
     'set.titleVis':'MindMap 타이틀 표시', 'set.show':'표시', 'set.hide':'숨김',
+    'tbm.maps':'내 맵 열기', 'tbm.save':'GitHub에 저장', 'tbm.settings':'설정', 'tbm.share':'공유 링크 복사',
     'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
     'set.tokenPh':'github_pat_… (이 레포 Contents 읽기/쓰기)',
     'set.tokenHint':'브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.',
@@ -499,8 +540,11 @@ const I18N = {
     'hint.bar':'Drag empty space: selection box &nbsp;|&nbsp; Middle/Space drag: pan &nbsp;|&nbsp; Wheel: zoom &nbsp;|&nbsp; Double-click: edit &nbsp;|&nbsp; Right-click: menu &nbsp;|&nbsp; See ⚙ Settings for shortcuts',
     'dash.title':'📁 My Maps', 'dash.refresh':'↻ Refresh', 'dash.new':'＋ New map',
     'dash.loading':'Loading…', 'dash.empty':'No saved maps yet. Start with “New map”.',
+    'dash.open':'Open', 'dash.link':'Link', 'dash.rename':'Rename', 'dash.dup':'Duplicate', 'dash.del':'Delete',
+    'dash.needToken':'You may need permission to read the list. Try entering a token in Settings.', 'dash.loadErr':'Failed to load the list:',
     'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
     'set.titleVis':'Show MindMap title', 'set.show':'Show', 'set.hide':'Hide',
+    'tbm.maps':'Open My Maps', 'tbm.save':'Save to GitHub', 'tbm.settings':'Settings', 'tbm.share':'Copy share link',
     'set.tokenLabel':'GitHub Personal Access Token (PAT)',
     'set.tokenPh':'github_pat_… (Contents read/write on this repo)',
     'set.tokenHint':'Stored only in your browser (localStorage), never sent to a server. Create it under GitHub → Settings → Developer settings → <b>Fine-grained tokens</b>, scoped to <b>only this mindmap repo</b> with <b>Contents: Read and write</b>. 90-day expiry recommended.',
@@ -1251,7 +1295,8 @@ function cancelConnecting() {
 }
 
 // ── DRAG ──
-function onNodeDragStart(e, id) {
+// skipRender: 터치 시작 시 true — render()로 DOM을 지우면 진행 중인 터치가 취소되므로 다시 그리지 않음
+function onNodeDragStart(e, id, skipRender) {
   e.stopPropagation();
   if (connecting) return;   // 연결 모드에서는 드래그 대신 클릭으로 연결
   // 빠르게 두 번 누르면(같은 노드, 350ms 이내) = 더블클릭 → 텍스트 편집
@@ -1273,7 +1318,7 @@ function onNodeDragStart(e, id) {
   const w = s2w(e.clientX, e.clientY);
   const n = getNode(id);
   dragOffset = { x: w.x - n.x, y: w.y - n.y };
-  render();
+  if (!skipRender) render();   // 터치는 여기서 그리지 않음(요소 제거 시 제스처 취소 방지)
 }
 
 // ── 선택 박스(마키) 갱신 + 교차 판정 ──
@@ -1418,6 +1463,7 @@ function setupEvents() {
   document.getElementById('canvas-menu').addEventListener('click', e => e.stopPropagation());
   document.getElementById('line-menu').addEventListener('click', e => e.stopPropagation());
   document.getElementById('color-picker').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('tb-dropdown').addEventListener('click', e => e.stopPropagation());
 
   document.addEventListener('click', () => { hideAll(); if (connecting) { cancelConnecting(); render(); } });
 
@@ -1535,8 +1581,8 @@ function onNodeTouchStart(e, id) {
     }
   }, LONGPRESS_MS);
   if (isReadOnly) return;
-  // 기존 드래그 시작 로직 재사용(선택 + 더블탭 편집 감지 포함)
-  onNodeDragStart({ stopPropagation() {}, preventDefault() {}, button: 0, shiftKey: false, clientX: t.clientX, clientY: t.clientY }, id);
+  // 기존 드래그 시작 로직 재사용(선택 + 더블탭 편집 감지 포함). 터치는 render 생략(제스처 취소 방지)
+  onNodeDragStart({ stopPropagation() {}, preventDefault() {}, button: 0, shiftKey: false, clientX: t.clientX, clientY: t.clientY }, id, true);
 }
 
 function setupTouch() {
@@ -1571,7 +1617,8 @@ function setupTouch() {
     }
   }, { passive: false });
 
-  svg.addEventListener('touchmove', e => {
+  // 이동/끝은 window에 바인딩 — render()로 노드 DOM이 새로 그려져도 드래그가 끊기지 않게
+  window.addEventListener('touchmove', e => {
     if (e.touches.length === 2 && touchState && touchState.mode === 'pinch') {
       e.preventDefault(); clearLongPress();
       const a = e.touches[0], b = e.touches[1];
@@ -1616,7 +1663,7 @@ function setupTouch() {
     }
   }, { passive: false });
 
-  svg.addEventListener('touchend', e => {
+  window.addEventListener('touchend', e => {
     clearLongPress();
     if (e.touches.length > 0) return;   // 아직 손가락이 남아있음
     // 드래그/리사이즈 마무리(마우스 mouseup 로직 재사용)
@@ -1624,9 +1671,10 @@ function setupTouch() {
     if (dragPivot) { recordHistory(); dragPivot = null; }
     if (isDragging && dragMoved) recordHistory();
     // 빈 캔버스 탭(이동·롱프레스 없음) → 선택 해제
-    if (touchOnCanvas && !touchMoved && !longPressFired && !connecting) { hideAll(); selectNone(); render(); }
+    if (touchOnCanvas && !touchMoved && !longPressFired && !connecting) { hideAll(); selectNone(); }
     isDragging = false; dragNodeId = null; isPanning = false; dragMoved = false;
     touchState = null; touchOnCanvas = false;
+    render();   // 터치 종료 시 한 번 그려 선택/이동 결과 반영(시작 때 생략한 render 보정)
   }, { passive: false });
 }
 
@@ -1673,7 +1721,21 @@ function hideAll() {
   document.getElementById('canvas-menu').style.display = 'none';
   document.getElementById('line-menu').style.display = 'none';
   document.getElementById('color-picker').style.display = 'none';
+  const td = document.getElementById('tb-dropdown'); if (td) td.style.display = 'none';
 }
+// 모바일 툴바 드롭다운
+function toggleTbMenu(e) {
+  e.stopPropagation();
+  const d = document.getElementById('tb-dropdown');
+  const open = d.style.display === 'block';
+  hideAll();
+  if (open) return;
+  const tb = document.getElementById('toolbar').getBoundingClientRect();
+  d.style.top = tb.bottom + 'px';
+  d.style.left = '8px';
+  d.style.display = 'block';
+}
+function tbRun(fn) { hideAll(); fn(); }
 
 function menuAddChild() { hideAll(); if (contextNodeId) addChild(contextNodeId); }
 function menuEdit() { hideAll(); if (contextNodeId) startEdit(contextNodeId); }
@@ -2156,40 +2218,62 @@ function startRemotePolling() {
 function openDashboard() { document.getElementById('dashboard-overlay').style.display = 'flex'; refreshDashboard(); }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+// 맵 선택 → 하단 공용 버튼으로 실행하는 방식
+let dashMaps = [], dashSelId = null, dashSelName = null;
+
 async function refreshDashboard() {
   const box = document.getElementById('map-list');
   box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.loading')) + '</div>';
   try {
     const list = await listMaps();
-    if (!list.length) { box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.empty')) + '</div>'; return; }
     list.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
-    box.innerHTML = '';
-    list.forEach(m => {
-      const row = document.createElement('div');
-      row.className = 'map-row' + (m.id === currentMapId ? ' active' : '');
-      const when = m.updatedAt ? new Date(m.updatedAt).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '';
-      row.innerHTML =
-        `<span class="map-name">${escapeHtml(m.name || m.id)}</span>` +
-        `<span class="map-meta">${when}</span>` +
-        `<button class="row-btn" data-act="open">열기</button>` +
-        `<button class="row-btn" data-act="share">링크</button>` +
-        `<button class="row-btn" data-act="rename">이름</button>` +
-        `<button class="row-btn" data-act="dup">복제</button>` +
-        `<button class="row-btn danger" data-act="del">삭제</button>`;
-      const open = () => { closeModal('dashboard-overlay'); openMap(m.id); };
-      row.querySelector('.map-name').onclick = open;
-      row.querySelector('[data-act=open]').onclick = open;
-      row.querySelector('[data-act=share]').onclick = () => copyShareLink(m.id);
-      row.querySelector('[data-act=rename]').onclick = () => renameMap(m.id, m.name);
-      row.querySelector('[data-act=dup]').onclick = () => duplicateMap(m.id);
-      row.querySelector('[data-act=del]').onclick = () => deleteMap(m.id, m.name);
-      box.appendChild(row);
-    });
+    dashMaps = list;
+    // 선택 유지: 사라진 선택이면 현재 열린 맵으로, 그것도 없으면 해제
+    if (!dashMaps.some(m => m.id === dashSelId)) dashSelId = dashMaps.some(m => m.id === currentMapId) ? currentMapId : null;
+    const sel = dashMaps.find(m => m.id === dashSelId);
+    dashSelName = sel ? (sel.name || sel.id) : null;
+    if (!dashMaps.length) { box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.empty')) + '</div>'; updateDashActions(); return; }
+    renderDashList(); updateDashActions();
   } catch (e) {
-    if (e.auth) box.innerHTML = '<div class="map-empty">목록을 읽으려면 권한이 필요할 수 있습니다.<br>설정에서 토큰을 입력해 보세요.</div>';
-    else box.innerHTML = '<div class="map-empty">목록을 불러오지 못했습니다: ' + escapeHtml(e.message || '') + '</div>';
+    if (e.auth) box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.needToken')) + '</div>';
+    else box.innerHTML = '<div class="map-empty">' + escapeHtml(t('dash.loadErr')) + ' ' + escapeHtml(e.message || '') + '</div>';
+    updateDashActions();
   }
 }
+
+function renderDashList() {
+  const box = document.getElementById('map-list');
+  box.innerHTML = '';
+  dashMaps.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'map-row' + (m.id === currentMapId ? ' active' : '') + (m.id === dashSelId ? ' sel' : '');
+    const when = m.updatedAt ? new Date(m.updatedAt).toLocaleString(getLang() === 'en' ? 'en-US' : 'ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    row.innerHTML = `<span class="map-name">${escapeHtml(m.name || m.id)}</span><span class="map-meta">${when}</span>`;
+    row.onclick = () => selectDashRow(m.id);
+    row.ondblclick = () => { dashSelId = m.id; daOpen(); };   // 더블탭/더블클릭 → 바로 열기
+    box.appendChild(row);
+  });
+}
+
+function selectDashRow(id) {
+  dashSelId = id;
+  const m = dashMaps.find(x => x.id === id);
+  dashSelName = m ? (m.name || m.id) : null;
+  renderDashList(); updateDashActions();
+}
+
+function updateDashActions() {
+  const on = !!dashSelId;
+  ['da-open', 'da-link', 'da-rename', 'da-dup', 'da-del'].forEach(idd => {
+    const b = document.getElementById(idd); if (b) b.disabled = !on;
+  });
+}
+
+function daOpen()   { if (dashSelId) { closeModal('dashboard-overlay'); openMap(dashSelId); } }
+function daLink()   { if (dashSelId) copyShareLink(dashSelId); }
+function daRename() { if (dashSelId) renameMap(dashSelId, dashSelName); }
+function daDup()    { if (dashSelId) duplicateMap(dashSelId); }
+function daDel()    { if (dashSelId) deleteMap(dashSelId, dashSelName); }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
