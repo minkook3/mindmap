@@ -288,6 +288,8 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 .field input:focus { border-color: #118ab2; }
 .field .hint-text { color: #6a7a99; font-size: 11px; margin-top: 4px; line-height: 1.5; }
 .field .hint-text a { color: #26c6da; }
+.contact-email { color: #26c6da; font-size: 13px; cursor: pointer; word-break: break-all; }
+.contact-email:hover { text-decoration: underline; }
 .modal .ok-btn { background: #e94560; border-color: #c73350; }
 .modal .ok-btn:hover { background: #c73350; }
 </style>
@@ -484,22 +486,11 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
         <input type="password" id="cfg-token" data-i18n-ph="set.tokenPh" placeholder="github_pat_… (이 레포 Contents 읽기/쓰기)">
         <div class="hint-text" data-i18n="set.tokenHint">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.</div>
       </div>
-      <div class="field">
-        <label data-i18n="set.apiLabel">API 주소</label>
-        <input type="text" id="cfg-apiBase" placeholder="https://api.github.com">
-      </div>
-      <div class="field">
-        <label data-i18n="set.repoLabel">레포 (owner / name)</label>
-        <input type="text" id="cfg-owner" placeholder="minkook3" style="width:46%;display:inline-block;margin-right:4%">
-        <input type="text" id="cfg-repo" placeholder="mindmap" style="width:46%;display:inline-block">
-      </div>
-      <div class="field">
-        <label data-i18n="set.branchLabel">브랜치 / 데이터 폴더</label>
-        <input type="text" id="cfg-branch" placeholder="main" style="width:46%;display:inline-block;margin-right:4%">
-        <input type="text" id="cfg-mapsDir" placeholder="data/maps" style="width:46%;display:inline-block">
-        <div class="hint-text" data-i18n="set.pathHint">맵은 <code>&lt;브랜치&gt;</code> 브랜치의 <code>&lt;폴더&gt;/&lt;id&gt;.json</code> 으로 저장됩니다.</div>
-      </div>
       <div id="shortcut-section"></div>
+      <div class="field" style="margin-top:6px">
+        <label data-i18n="set.contact">문의</label>
+        <div id="contact-email" class="contact-email" onclick="copyContactEmail()" title="클릭하면 복사"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button onclick="closeModal('settings-overlay')" data-i18n="set.cancel">취소</button>
@@ -617,7 +608,7 @@ const I18N = {
     'dash.loading':'불러오는 중…', 'dash.empty':'저장된 맵이 없습니다. “새 맵 만들기”로 시작하세요.',
     'dash.open':'열기', 'dash.link':'링크', 'dash.rename':'이름', 'dash.dup':'복제', 'dash.del':'삭제',
     'dash.needToken':'목록을 읽으려면 권한이 필요할 수 있습니다. 설정에서 토큰을 입력해 보세요.', 'dash.loadErr':'목록을 불러오지 못했습니다:',
-    'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
+    'set.title':'⚙ 설정', 'set.lang':'언어 (Language)', 'set.contact':'문의',
     'cpick.title':'색상 선택', 'cpick.apply':'적용',
     'tbm.maps':'내 맵 열기', 'tbm.save':'저장', 'tbm.settings':'설정', 'tbm.share':'공유 링크 복사', 'tbm.present':'발표 모드', 'tbm.translate':'번역 (노드 문구)', 'tbm.trOrig':'원문', 'tbm.trCommit':'현재 상태로 원문 변경',
     'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
@@ -642,7 +633,7 @@ const I18N = {
     'dash.loading':'Loading…', 'dash.empty':'No saved maps yet. Start with “New map”.',
     'dash.open':'Open', 'dash.link':'Link', 'dash.rename':'Rename', 'dash.dup':'Duplicate', 'dash.del':'Delete',
     'dash.needToken':'You may need permission to read the list. Try entering a token in Settings.', 'dash.loadErr':'Failed to load the list:',
-    'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
+    'set.title':'⚙ Settings', 'set.lang':'Language (언어)', 'set.contact':'Contact',
     'cpick.title':'Pick a color', 'cpick.apply':'Apply',
     'tbm.maps':'Open My Maps', 'tbm.save':'Save', 'tbm.settings':'Settings', 'tbm.share':'Copy share link', 'tbm.present':'Presentation', 'tbm.translate':'Translate (node text)', 'tbm.trOrig':'Original', 'tbm.trCommit':'Set current view as original',
     'set.tokenLabel':'GitHub Personal Access Token (PAT)',
@@ -667,7 +658,7 @@ const I18N = {
     'dash.loading':'読み込み中…', 'dash.empty':'保存されたマップがありません。「新規マップ」で始めましょう。',
     'dash.open':'開く', 'dash.link':'リンク', 'dash.rename':'名前', 'dash.dup':'複製', 'dash.del':'削除',
     'dash.needToken':'リストを読むには権限が必要かもしれません。設定でトークンを入力してください。', 'dash.loadErr':'リストを読み込めませんでした:',
-    'set.title':'⚙ 設定', 'set.lang':'言語 (Language)',
+    'set.title':'⚙ 設定', 'set.lang':'言語 (Language)', 'set.contact':'お問い合わせ',
     'cpick.title':'色を選択', 'cpick.apply':'適用',
     'tbm.maps':'マイマップを開く', 'tbm.save':'保存', 'tbm.settings':'設定', 'tbm.share':'共有リンクをコピー', 'tbm.present':'プレゼンモード', 'tbm.translate':'翻訳 (ノード文言)', 'tbm.trOrig':'原文', 'tbm.trCommit':'現在の表示を原文にする',
     'set.tokenLabel':'GitHub 個人アクセストークン (PAT)',
@@ -700,7 +691,8 @@ Object.assign(I18N.ko, {
   'cf.conflict':'다른 사람이 이 맵을 먼저 수정했습니다.\n[확인] 최신 버전을 불러오기 (현재 변경 사항은 버려집니다)\n[취소] 그대로 두기','cf.deleteMap':'"{0}" 맵을 삭제할까요? 되돌릴 수 없습니다.','cf.reloadLose':'최신 버전을 불러오면 저장하지 않은 현재 변경 사항은 사라집니다.\n계속할까요?','cf.newClear':'현재 작업을 지우고 새로 시작할까요?',
   'pr.rename':'맵 이름 변경','pr.saveAsNew':'현재 맵을 새 이름으로 저장','pr.newMap':'새 맵 이름','pr.defaultMapName':'새 마인드맵',
   'pr.linkTitle':'링크 주소 (URL) — 비우면 링크 제거','msg.linkSet':'링크가 설정되었습니다','msg.linkRemoved':'링크가 제거되었습니다',
-  'cf.commitOrig':'노드 안의 원문이 현재 보이는 언어로 변경됩니다.\n정말로 실행하시겠습니까?','msg.origUpdated':'원문을 현재 표시 언어로 변경했습니다','msg.alreadyOrig':'이미 원문 상태입니다 — 먼저 표시 언어를 선택하세요'
+  'cf.commitOrig':'노드 안의 원문이 현재 보이는 언어로 변경됩니다.\n정말로 실행하시겠습니까?','msg.origUpdated':'원문을 현재 표시 언어로 변경했습니다','msg.alreadyOrig':'이미 원문 상태입니다 — 먼저 표시 언어를 선택하세요',
+  'msg.emailCopied':'이메일 주소를 복사했습니다'
 });
 Object.assign(I18N.en, {
   'msg.keysReset':'Shortcuts reset to defaults','msg.copiedN':'Copied {0} nodes','msg.copied1':'Copied node',
@@ -721,7 +713,8 @@ Object.assign(I18N.en, {
   'cf.conflict':'Someone edited this map first.\n[OK] Load the latest (your current changes will be discarded)\n[Cancel] Keep as is','cf.deleteMap':'Delete map "{0}"? This cannot be undone.','cf.reloadLose':'Loading the latest will discard your unsaved changes.\nContinue?','cf.newClear':'Clear current work and start over?',
   'pr.rename':'Rename map','pr.saveAsNew':'Save current map under a new name','pr.newMap':'New map name','pr.defaultMapName':'New mindmap',
   'pr.linkTitle':'Link URL — leave empty to remove','msg.linkSet':'Link set','msg.linkRemoved':'Link removed',
-  'cf.commitOrig':'Each node’s original text will be replaced with what is currently shown.\nProceed?','msg.origUpdated':'Originals replaced with the current view','msg.alreadyOrig':'Already showing originals — pick a display language first'
+  'cf.commitOrig':'Each node’s original text will be replaced with what is currently shown.\nProceed?','msg.origUpdated':'Originals replaced with the current view','msg.alreadyOrig':'Already showing originals — pick a display language first',
+  'msg.emailCopied':'Email address copied'
 });
 Object.assign(I18N.ja, {
   'msg.keysReset':'ショートカットを初期値に戻しました','msg.copiedN':'{0}個のノードをコピーしました','msg.copied1':'ノードをコピーしました',
@@ -742,7 +735,8 @@ Object.assign(I18N.ja, {
   'cf.conflict':'他の人がこのマップを先に編集しました。\n[OK] 最新を読み込む (現在の変更は破棄されます)\n[キャンセル] そのままにする','cf.deleteMap':'"{0}" マップを削除しますか？元に戻せません。','cf.reloadLose':'最新を読み込むと未保存の変更は失われます。\n続行しますか？','cf.newClear':'現在の作業を消して新しく始めますか？',
   'pr.rename':'マップ名を変更','pr.saveAsNew':'現在のマップを新しい名前で保存','pr.newMap':'新しいマップ名','pr.defaultMapName':'新しいマインドマップ',
   'pr.linkTitle':'リンクURL — 空にすると削除','msg.linkSet':'リンクを設定しました','msg.linkRemoved':'リンクを削除しました',
-  'cf.commitOrig':'ノードの原文が現在表示中の言語に置き換えられます。\n実行しますか？','msg.origUpdated':'原文を現在の表示言語に置き換えました','msg.alreadyOrig':'すでに原文表示です — 先に表示言語を選択してください'
+  'cf.commitOrig':'ノードの原文が現在表示中の言語に置き換えられます。\n実行しますか？','msg.origUpdated':'原文を現在の表示言語に置き換えました','msg.alreadyOrig':'すでに原文表示です — 先に表示言語を選択してください',
+  'msg.emailCopied':'メールアドレスをコピーしました'
 });
 function tf(key){ var a=arguments; return String(t(key)).replace(/\{(\d+)\}/g, function(_, i){ return a[+i+1] != null ? a[+i+1] : ''; }); }
 Object.assign(I18N.ko, {
@@ -2648,11 +2642,8 @@ const GH_DEFAULTS = {
   mapsDir: 'data/maps'
 };
 
-function ghCfg() {
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem('gh_cfg') || '{}'); } catch (e) {}
-  return Object.assign({}, GH_DEFAULTS, saved);
-}
+// 저장소 좌표(API·레포·브랜치·폴더)는 코드 고정값만 사용 — 사용자가 못 바꿈(협업 공유 좌표)
+function ghCfg() { return Object.assign({}, GH_DEFAULTS); }
 function ghToken() { return localStorage.getItem('gh_pat') || ''; }
 function ghHeaders(extra) {
   const h = Object.assign({ 'Accept': 'application/vnd.github+json' }, extra || {});
@@ -3008,13 +2999,8 @@ function createMapPrompt(fromCurrent) {
 
 // ── 설정 모달 ──
 function openSettings() {
-  const c = ghCfg();
   document.getElementById('cfg-token').value = ghToken();
-  document.getElementById('cfg-apiBase').value = c.apiBase;
-  document.getElementById('cfg-owner').value = c.owner;
-  document.getElementById('cfg-repo').value = c.repo;
-  document.getElementById('cfg-branch').value = c.branch;
-  document.getElementById('cfg-mapsDir').value = c.mapsDir;
+  fillContact();
   cancelRebind();
   renderShortcutHelp();
   document.getElementById('settings-overlay').style.display = 'flex';
@@ -3055,17 +3041,19 @@ function cancelRebind() {
 function saveSettings() {
   const token = document.getElementById('cfg-token').value.trim();
   if (token) localStorage.setItem('gh_pat', token); else localStorage.removeItem('gh_pat');
-  const cfg = {
-    apiBase: document.getElementById('cfg-apiBase').value.trim() || GH_DEFAULTS.apiBase,
-    owner: document.getElementById('cfg-owner').value.trim() || GH_DEFAULTS.owner,
-    repo: document.getElementById('cfg-repo').value.trim() || GH_DEFAULTS.repo,
-    branch: document.getElementById('cfg-branch').value.trim() || GH_DEFAULTS.branch,
-    mapsDir: document.getElementById('cfg-mapsDir').value.trim() || GH_DEFAULTS.mapsDir
-  };
-  localStorage.setItem('gh_cfg', JSON.stringify(cfg));
+  localStorage.removeItem('gh_cfg');   // 옛 저장값 정리 — 좌표는 코드 고정값만 사용
   closeModal('settings-overlay');
   showToast(t('msg.settingsSaved'));
   applyEditPermission();   // 토큰을 넣었으면 편집 가능, 지웠으면 뷰어로 즉시 전환
+}
+// ── 문의 메일 (스팸봇 회피: 평문 미포함, 런타임 조립 + 클릭 복사) ──
+const CONTACT_PARTS = ['minkook', 'nhn.com'];
+function contactEmail() { return CONTACT_PARTS[0] + '@' + CONTACT_PARTS[1]; }
+function fillContact() { const el = document.getElementById('contact-email'); if (el) el.textContent = contactEmail(); }
+function copyContactEmail() {
+  const a = contactEmail();
+  if (navigator.clipboard) navigator.clipboard.writeText(a).then(() => showToast(t('msg.emailCopied'))).catch(() => prompt(contactEmail(), a));
+  else prompt(contactEmail(), a);
 }
 
 // ── 입력 프롬프트(이름 등) ──
