@@ -72,7 +72,8 @@ body.presenting #present-exit { display: inline-flex; }
   #present-exit { width: 42px; height: 42px; opacity: 0.6; }
   #present-exit svg { width: 22px; height: 22px; }
 }
-.toolbar-title { color: #e94560; font-weight: bold; font-size: 13px; margin-right: 4px; letter-spacing: 0.5px; }
+.toolbar-title { color: #e94560; font-weight: bold; font-size: 13px; margin-right: 4px; letter-spacing: 0.5px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.toolbar-title:hover { background: #0f3460; }
 .toolbar-sep { width: 1px; height: 16px; background: #1a4a80; margin: 0 3px; }
 
 button {
@@ -281,11 +282,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 </button>
 
 <div id="toolbar" class="tb-collapsed">
-  <span class="toolbar-title">MindMap</span>
-  <div class="toolbar-sep"></div>
-  <button class="icon-btn tb-menu-btn" onclick="toggleTbMenu(event)" title="메뉴" aria-label="Menu">
-    <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-  </button>
+  <span class="toolbar-title" onclick="toggleTbMenu(event)" title="메뉴" role="button" aria-label="Menu">MindMap ▾</span>
   <button class="btn-cloud icon-btn tb-collapsible" onclick="openDashboard()" data-i18n-title="tb.mapsT" title="내 맵" aria-label="My Maps">
     <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
   </button>
@@ -463,13 +460,6 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
         </div>
       </div>
       <div class="field">
-        <label data-i18n="set.titleVis">MindMap 타이틀 표시</label>
-        <div class="lang-toggle">
-          <button type="button" id="title-on" onclick="setShowTitle(true)" data-i18n="set.show">표시</button>
-          <button type="button" id="title-off" onclick="setShowTitle(false)" data-i18n="set.hide">숨김</button>
-        </div>
-      </div>
-      <div class="field">
         <label data-i18n="set.tokenLabel">GitHub 개인 액세스 토큰 (PAT)</label>
         <input type="password" id="cfg-token" data-i18n-ph="set.tokenPh" placeholder="github_pat_… (이 레포 Contents 읽기/쓰기)">
         <div class="hint-text" data-i18n="set.tokenHint">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.</div>
@@ -585,7 +575,6 @@ const I18N = {
     'dash.open':'열기', 'dash.link':'링크', 'dash.rename':'이름', 'dash.dup':'복제', 'dash.del':'삭제',
     'dash.needToken':'목록을 읽으려면 권한이 필요할 수 있습니다. 설정에서 토큰을 입력해 보세요.', 'dash.loadErr':'목록을 불러오지 못했습니다:',
     'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
-    'set.titleVis':'MindMap 타이틀 표시', 'set.show':'표시', 'set.hide':'숨김',
     'tbm.maps':'내 맵 열기', 'tbm.save':'저장', 'tbm.settings':'설정', 'tbm.share':'공유 링크 복사', 'tbm.present':'발표 모드', 'tbm.translate':'번역 (노드 문구)', 'tbm.trOrig':'원문',
     'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
     'set.tokenPh':'github_pat_… (이 레포 Contents 읽기/쓰기)',
@@ -610,7 +599,6 @@ const I18N = {
     'dash.open':'Open', 'dash.link':'Link', 'dash.rename':'Rename', 'dash.dup':'Duplicate', 'dash.del':'Delete',
     'dash.needToken':'You may need permission to read the list. Try entering a token in Settings.', 'dash.loadErr':'Failed to load the list:',
     'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
-    'set.titleVis':'Show MindMap title', 'set.show':'Show', 'set.hide':'Hide',
     'tbm.maps':'Open My Maps', 'tbm.save':'Save', 'tbm.settings':'Settings', 'tbm.share':'Copy share link', 'tbm.present':'Presentation', 'tbm.translate':'Translate (node text)', 'tbm.trOrig':'Original',
     'set.tokenLabel':'GitHub Personal Access Token (PAT)',
     'set.tokenPh':'github_pat_… (Contents read/write on this repo)',
@@ -685,14 +673,6 @@ Object.assign(I18N.en, {
 function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
 function setLang(l) { localStorage.setItem('mm_lang', l); applyLang(); }
 // 타이틀 표시/숨김 (기본 표시)
-function getShowTitle() { return localStorage.getItem('mm_showTitle') !== '0'; }
-function setShowTitle(v) { localStorage.setItem('mm_showTitle', v ? '1' : '0'); applyTitleVis(); }
-function applyTitleVis() {
-  const show = getShowTitle();
-  const tt = document.querySelector('.toolbar-title'); if (tt) tt.style.display = show ? '' : 'none';
-  const on = document.getElementById('title-on'), off = document.getElementById('title-off');
-  if (on && off) { on.classList.toggle('active', show); off.classList.toggle('active', !show); }
-}
 function t(key) { const d = I18N[getLang()]; return (d && d[key] != null) ? d[key] : (I18N.ko[key] != null ? I18N.ko[key] : key); }
 function applyLang() {
   const lang = getLang();
@@ -1018,7 +998,6 @@ window.addEventListener('DOMContentLoaded', () => {
   loadKeys();
   displayLang = localStorage.getItem('mm_nodeLang') || 'orig';   // 노드 표시 언어 복원
   applyLang();          // 저장된 언어(한/영) UI 반영
-  applyTitleVis();      // 타이틀 표시/숨김 반영
   initColorPicker();
   setupEvents();
   setupTouch();
