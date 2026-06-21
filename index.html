@@ -35,6 +35,7 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-seri
   padding: 4px 0; z-index: 250; box-shadow: 0 6px 20px rgba(0,0,0,0.6); display: none;
 }
 #tb-dropdown .menu-item { padding: 12px 18px; font-size: 14px; }
+#tb-dropdown .tb-sub { padding-left: 34px; font-size: 13px; color: #b9c7dd; }
 /* 화면 크기와 무관하게 인라인 버튼은 숨기고 드롭다운(햄버거)로 통일 */
 .tb-collapsible { display: none !important; }
 
@@ -313,6 +314,16 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="tbRun(shareMap)"><span class="mtext" data-i18n="tbm.share">공유 링크 복사</span></div>
   <div class="menu-sep"></div>
   <div class="menu-item" onclick="tbRun(enterPresent)"><span class="mtext" data-i18n="tbm.present">발표 모드</span></div>
+  <div class="menu-sep"></div>
+  <div class="menu-item" onclick="toggleTrSub(event)">
+    <span class="mtext" data-i18n="tbm.translate">번역</span><span class="submenu-arrow" id="tr-arrow">▾</span>
+  </div>
+  <div id="tr-sub" style="display:none">
+    <div class="menu-item tb-sub" onclick="tbRun(() => setNodeLang('orig'))"><span class="mtext" data-i18n="tbm.trOrig">원문</span><span class="menu-check" id="nl-orig"></span></div>
+    <div class="menu-item tb-sub" onclick="tbRun(() => setNodeLang('ko'))">한국어<span class="menu-check" id="nl-ko"></span></div>
+    <div class="menu-item tb-sub" onclick="tbRun(() => setNodeLang('en'))">English<span class="menu-check" id="nl-en"></span></div>
+    <div class="menu-item tb-sub" onclick="tbRun(() => setNodeLang('ja'))">日本語<span class="menu-check" id="nl-ja"></span></div>
+  </div>
 </div>
 
 <button id="present-exit" onclick="exitPresent()" title="발표 모드 종료 (ESC)" aria-label="Exit presentation">
@@ -501,6 +512,7 @@ let contextNodeId = null;
 let colorTarget = 'bg';                 // 색상 피커 대상: 'bg'(배경) | 'text'(글자)
 let isReadOnly = false;
 let legacyReadOnly = false;            // 레거시 압축 공유 링크 = 항상 읽기 전용(토큰 무관)
+let displayLang = 'orig';              // 노드 문구 표시 언어: 'orig'(원문) | 'ko' | 'en' | 'ja' — UI 언어와 무관
 let viewX = 0, viewY = 0, viewScale = 1;
 let isPanning = false, panStart = null;
 let isDragging = false, dragNodeId = null, dragOffset = null;
@@ -563,7 +575,7 @@ const I18N = {
     'dash.needToken':'목록을 읽으려면 권한이 필요할 수 있습니다. 설정에서 토큰을 입력해 보세요.', 'dash.loadErr':'목록을 불러오지 못했습니다:',
     'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
     'set.titleVis':'MindMap 타이틀 표시', 'set.show':'표시', 'set.hide':'숨김',
-    'tbm.maps':'내 맵 열기', 'tbm.save':'GitHub에 저장', 'tbm.settings':'설정', 'tbm.share':'공유 링크 복사', 'tbm.present':'발표 모드',
+    'tbm.maps':'내 맵 열기', 'tbm.save':'GitHub에 저장', 'tbm.settings':'설정', 'tbm.share':'공유 링크 복사', 'tbm.present':'발표 모드', 'tbm.translate':'번역 (노드 문구)', 'tbm.trOrig':'원문',
     'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
     'set.tokenPh':'github_pat_… (이 레포 Contents 읽기/쓰기)',
     'set.tokenHint':'브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.',
@@ -588,7 +600,7 @@ const I18N = {
     'dash.needToken':'You may need permission to read the list. Try entering a token in Settings.', 'dash.loadErr':'Failed to load the list:',
     'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
     'set.titleVis':'Show MindMap title', 'set.show':'Show', 'set.hide':'Hide',
-    'tbm.maps':'Open My Maps', 'tbm.save':'Save to GitHub', 'tbm.settings':'Settings', 'tbm.share':'Copy share link', 'tbm.present':'Presentation',
+    'tbm.maps':'Open My Maps', 'tbm.save':'Save to GitHub', 'tbm.settings':'Settings', 'tbm.share':'Copy share link', 'tbm.present':'Presentation', 'tbm.translate':'Translate (node text)', 'tbm.trOrig':'Original',
     'set.tokenLabel':'GitHub Personal Access Token (PAT)',
     'set.tokenPh':'github_pat_… (Contents read/write on this repo)',
     'set.tokenHint':'Stored only in your browser (localStorage), never sent to a server. Create it under GitHub → Settings → Developer settings → <b>Fine-grained tokens</b>, scoped to <b>only this mindmap repo</b> with <b>Contents: Read and write</b>. 90-day expiry recommended.',
@@ -610,6 +622,7 @@ Object.assign(I18N.ko, {
   'msg.renamed':'이름이 변경되었습니다','msg.duplicated':'복제되었습니다','msg.deleted':'삭제되었습니다','msg.authFailShort':'토큰이 없거나 권한이 부족합니다','msg.error':'오류가 발생했습니다',
   'msg.remoteApplied':'다른 사람의 변경이 반영되었습니다','msg.latestLoaded':'최신 버전을 불러왔습니다','msg.needToken2':'저장하려면 설정에서 토큰을 입력하세요','msg.savedAsNew':'새 맵으로 저장되었습니다','msg.mapCreated':'맵이 생성되었습니다',
   'msg.settingsSaved':'설정이 저장되었습니다','msg.shareCopied':'공유 링크가 복사되었습니다 (편집 가능)','msg.localSaved':'저장되었습니다','msg.localSaveFail':'저장 실패: {0}','msg.noLocal':'저장된 데이터가 없습니다','msg.loaded':'불러왔습니다','msg.loadFail':'불러오기 실패',
+  'msg.translating':'번역 중…','msg.translated':'번역 완료','msg.translatePartial':'번역 일부 실패 ({0}건) — 네트워크 확인',
   'msg.dirtyShareHint':'변경 사항이 있습니다 — “☁ 저장” 후 공유하면 최신 내용이 반영됩니다','msg.openFirst':'먼저 “📁 내 맵”에서 맵을 열거나 만든 뒤 공유하세요','msg.mapWord':'맵',
   'msg.presentOn':'발표 모드 — 이동/줌만 가능, ESC(또는 ✕)로 종료',
   'msg.fitView':'화면에 맞췄습니다',
@@ -627,6 +640,7 @@ Object.assign(I18N.en, {
   'msg.renamed':'Renamed','msg.duplicated':'Duplicated','msg.deleted':'Deleted','msg.authFailShort':'Missing token or insufficient permission','msg.error':'An error occurred',
   'msg.remoteApplied':'Someone else’s changes were applied','msg.latestLoaded':'Loaded the latest version','msg.needToken2':'Enter a token in Settings to save','msg.savedAsNew':'Saved as a new map','msg.mapCreated':'Map created',
   'msg.settingsSaved':'Settings saved','msg.shareCopied':'Share link copied (editable)','msg.localSaved':'Saved','msg.localSaveFail':'Save failed: {0}','msg.noLocal':'No saved data','msg.loaded':'Loaded','msg.loadFail':'Load failed',
+  'msg.translating':'Translating…','msg.translated':'Translation done','msg.translatePartial':'Some translations failed ({0}) — check network',
   'msg.dirtyShareHint':'You have unsaved changes — save (☁) first so the share reflects the latest','msg.openFirst':'Open or create a map in “📁 My Maps” first, then share','msg.mapWord':'map',
   'msg.presentOn':'Presentation — pan/zoom only, press ESC (or ✕) to exit',
   'msg.fitView':'Fit to screen',
@@ -848,9 +862,143 @@ function textColorFor(hex) {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#1a1a2e' : '#fff';
 }
 
+// ══════════════════════════════════════════════════════════
+//  NODE TEXT TRANSLATION — 노드 문구만 번역(UI/메뉴는 그대로)
+//  · 원문(n.text)은 절대 불변. 번역은 항상 원문에서만 → 왕복해도 안 망가짐
+//  · 캐시는 "원문 텍스트 → {src, ko, en, ja}" 형태로 localStorage에 맵별 저장
+//    → 새로고침·재방문해도 즉시. 같은 문구는 한 번만 번역(중복 제거). 맵 파일은 안 커짐
+//  · 표시 언어로 전환하면 캐시에 없는 것만 병렬 번역, 유휴 시 나머지 언어 미리 받아둠
+//  · 엔진 교체는 translateText() 한 곳만 바꾸면 됨
+// ══════════════════════════════════════════════════════════
+const TRANSLATE_ENGINE = 'gtx';
+let trCache = {};                  // { 원문텍스트: { src, ko, en, ja } } — 현재 맵 기준
+let prefetchScheduled = false;
+
+function txKey(text) { return (text || '').trim(); }
+function trStoreKey() { return 'mm_tr_' + (currentMapId || 'local'); }
+function loadTrCache() { try { trCache = JSON.parse(localStorage.getItem(trStoreKey()) || '{}'); } catch (e) { trCache = {}; } }
+function saveTrCache() { try { localStorage.setItem(trStoreKey(), JSON.stringify(trCache)); } catch (e) {} }
+
+// 맵 로드 직후: localStorage 캐시 로드 + 구버전(노드에 박혀있던 n.tr)을 캐시로 이관 후 노드에서 제거(파일 비대화 방지)
+function initTrForMap() {
+  loadTrCache();
+  let migrated = false;
+  nodes.forEach(n => {
+    const k = txKey(n.text);
+    if (k && (n.tr || n.srcLang)) {
+      const e = trCache[k] || (trCache[k] = {});
+      if (n.srcLang && !e.src) e.src = n.srcLang;
+      if (n.tr) for (const l in n.tr) if (e[l] == null) e[l] = n.tr[l];
+      migrated = true;
+    }
+    delete n.tr; delete n.srcLang; delete n.trEngine;   // 노드는 원문만 보존(맵 파일 클린)
+  });
+  if (migrated) saveTrCache();
+}
+
+// [엔진 교체 지점] 무료 구글 비공식 엔드포인트(엔진 A). 나중에 여기만 바꾸면 됨.
+async function translateText(text, to) {
+  const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl='
+            + encodeURIComponent(to) + '&dt=t&q=' + encodeURIComponent(text);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('translate http ' + res.status);
+  const data = await res.json();
+  const translated = (data[0] || []).map(seg => (seg && seg[0]) || '').join('');
+  const src = data[2] || '';            // 감지된 원문 언어
+  return { text: translated, src };
+}
+
+// 노드가 화면에 표시할 문구: 원문 또는 캐시된 번역
+function nodeText(n) {
+  const o = n.text || '';
+  if (displayLang === 'orig' || !displayLang) return o;
+  const e = trCache[txKey(o)];
+  if (!e) return o;                                   // 아직 번역 전 → 원문 임시 표시
+  if (e.src === displayLang) return o;                // 원문 언어 = 표시 언어 → 원문 그대로
+  return (e[displayLang] != null) ? e[displayLang] : o;
+}
+
+// 원문 텍스트 하나를 대상 언어로 번역해 캐시에 저장(원문 불변)
+async function translateOne(text, to) {
+  const k = txKey(text);
+  if (!k) return;
+  let e = trCache[k] || (trCache[k] = {});
+  if (e.src === to || e[to] != null) return;          // 원문 언어이거나 이미 캐시됨
+  const { text: tr, src } = await translateText(text, to);
+  if (src) e.src = src;
+  if (src && src === to) return;                       // 원문이 이미 대상 언어 → 원문 사용
+  e[to] = tr;
+}
+
+// 현재 맵에서 대상 언어로 번역이 필요한 "고유 문구" 목록
+function pendingTexts(to) {
+  const uniq = [...new Set(nodes.map(n => txKey(n.text)).filter(Boolean))];
+  return uniq.filter(k => { const e = trCache[k]; return !(e && (e.src === to || e[to] != null)); });
+}
+
+// 표시 언어로 전환: 캐시에 없는 고유 문구만 병렬 번역(진행 표시) → 끝나면 나머지 언어 유휴 프리페치
+async function ensureTranslations(to) {
+  if (to === 'orig') { render(); return; }
+  const todo = pendingTexts(to);
+  if (!todo.length) { render(); schedulePrefetch(to); return; }
+  showToast(t('msg.translating'));
+  let fail = 0;
+  const CONC = 8;                                      // 병렬 처리(왕복 횟수 체감 단축)
+  for (let i = 0; i < todo.length; i += CONC) {
+    await Promise.all(todo.slice(i, i + CONC).map(k => translateOne(k, to).catch(() => { fail++; })));
+    render(); saveTrCache();                           // 점진적 표시 + 즉시 영구 저장
+  }
+  showToast(fail ? tf('msg.translatePartial', fail) : t('msg.translated'));
+  schedulePrefetch(to);
+}
+function maybeTranslate() { if (displayLang && displayLang !== 'orig') ensureTranslations(displayLang); }
+
+// 유휴 시간에 나머지 두 언어를 미리 번역 → 이후 어떤 언어로 바꿔도 즉시(0ms)
+function schedulePrefetch(exceptLang) {
+  if (prefetchScheduled) return;
+  prefetchScheduled = true;
+  const idle = window.requestIdleCallback ? window.requestIdleCallback : (cb => setTimeout(cb, 1500));
+  idle(async () => {
+    prefetchScheduled = false;
+    for (const lang of ['ko', 'en', 'ja'].filter(l => l !== exceptLang)) {
+      const todo = pendingTexts(lang);
+      for (let i = 0; i < todo.length; i += 3) {       // 백그라운드라 낮은 동시성으로 살살
+        await Promise.all(todo.slice(i, i + 3).map(k => translateOne(k, lang).catch(() => {})));
+        saveTrCache();
+      }
+    }
+  });
+}
+
+// 드롭다운에서 표시 언어 전환
+function setNodeLang(lang) {
+  displayLang = lang;
+  localStorage.setItem('mm_nodeLang', lang);
+  updateNodeLangChecks();
+  if (lang === 'orig') { render(); return; }
+  ensureTranslations(lang);
+}
+function updateNodeLangChecks() {
+  ['orig', 'ko', 'en', 'ja'].forEach(l => {
+    const el = document.getElementById('nl-' + l);
+    if (el) el.textContent = (displayLang === l) ? '✓' : '';
+  });
+}
+// 드롭다운 내 '번역' 하위 목록 펼치기/접기(인라인 — 모바일 안전)
+function toggleTrSub(e) {
+  e.stopPropagation();
+  const sub = document.getElementById('tr-sub');
+  const arr = document.getElementById('tr-arrow');
+  const open = sub.style.display === 'block';
+  sub.style.display = open ? 'none' : 'block';
+  if (arr) arr.textContent = open ? '▾' : '▴';
+  if (!open) updateNodeLangChecks();
+}
+
 // ── BOOT ──
 window.addEventListener('DOMContentLoaded', () => {
   loadKeys();
+  displayLang = localStorage.getItem('mm_nodeLang') || 'orig';   // 노드 표시 언어 복원
   applyLang();          // 저장된 언어(한/영) UI 반영
   applyTitleVis();      // 타이틀 표시/숨김 반영
   initColorPicker();
@@ -877,15 +1025,19 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('btn-undo').style.display = 'none';
       document.getElementById('btn-redo').style.display = 'none';
     } catch(e) { initDefault(); }
+    initTrForMap();
     render(); resetHistory();
+    maybeTranslate();
 
   } else {
     // 로컬 초안 복원 — 토큰 없으면 뷰어(읽기 전용)
     isReadOnly = !ghToken();
     if (!loadFromLocal(true)) initDefault();
+    initTrForMap();
     render(); resetHistory();
     setCloudStatus('', t('st.localIdle'));
     updateReadonlyBanner();
+    maybeTranslate();
   }
 
   startRemotePolling();   // 비동기 협업: 원격 변경 주기적 감지
@@ -1134,7 +1286,7 @@ function nodeGeom(n) {
   const isRoot = !n.parentId;
   const fsBase = isRoot ? 15 : 13;
   const charW = isRoot ? 8.5 : 7.5;
-  const lines = (n.text || '').split('\n');
+  const lines = nodeText(n).split('\n');
   const longest = Math.max(1, ...lines.map(l => l.length));
   const lineHBase = fsBase + 6;
   // 텍스트가 차지하는 최소 크기(base px, 미스케일)
@@ -1988,7 +2140,7 @@ function startEdit(id) {
   if (!n) return;
   const input = document.getElementById('edit-input');
   const s = w2s(n.x, n.y);
-  input.value = n.text;
+  input.value = nodeText(n);   // 현재 표시 중인 문구로 편집 시작
   input.style.display = 'block';
   // 내용에 맞춰 textarea 크기/위치 자동 조정 후 노드 중앙에 배치
   const autosize = () => {
@@ -2006,7 +2158,13 @@ function startEdit(id) {
   const commit = () => {
     const val = input.value.replace(/\s+$/, '');   // 끝 공백/빈 줄만 정리
     const node = getNode(id);
-    if (val && node && node.text !== val) { node.text = val; recordHistory(); }
+    const cur = node ? nodeText(node) : '';
+    if (val && node && cur !== val) {
+      node.text = val;            // 입력한 글이 새 원문(원문은 항상 마지막으로 친 글)
+      recordHistory();
+      // 새 문구는 캐시 미스 → 표시 언어로만 번역해 캐시에 채움(원문은 그대로 보존)
+      if (displayLang !== 'orig') translateOne(val, displayLang).then(() => { saveTrCache(); render(); }).catch(() => {});
+    }
     input.style.display = 'none';
     render();
   };
@@ -2205,12 +2363,14 @@ async function loadMapById(id) {
   if (!r) throw new Error('맵을 찾을 수 없습니다: ' + id);
   applyMapData(r.data);
   currentMapId = id; currentMapSha = r.sha;
+  initTrForMap();                 // 이 맵의 번역 캐시 로드(+구버전 이관·정리)
   // 이름은 맵 파일 안에서(없으면 루트 노드 텍스트, 그것도 없으면 id)
   currentMapName = r.data.name || deriveMapName(r.data) || id;
   viewX = 0; viewY = 0; viewScale = 1; selectNone();
   mapDirty = false;
   render(); resetHistory();
   setCloudStatus('synced', currentMapName + t('st.syncedSuffix'));
+  maybeTranslate();
 }
 
 async function cloudSave() {
