@@ -141,6 +141,9 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 .menu-item:hover { background: #0f3460; color: #fff; }
 .menu-item.danger { color: #e94560; }
 .menu-item.danger:hover { background: #3a1020; color: #ff6b6b; }
+/* 터치 기기에서만 보이는 메뉴 항목(예: 사각 선택 — 데스크톱은 빈 공간 드래그로 가능) */
+.touch-only { display: none !important; }
+@media (pointer: coarse) { .touch-only { display: flex !important; } }
 .menu-sep { height: 1px; background: #1a4a80; margin: 4px 0; }
 .menu-icon { font-size: 14px; width: 18px; text-align: center; }
 .menu-check { margin-left: auto; font-size: 15px; color: #26c6da; }
@@ -402,7 +405,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="menuCreateNode()">
     <span class="menu-icon">＋</span> <span class="mtext" data-i18n="menu.createNode">노드 생성</span>
   </div>
-  <div class="menu-item" onclick="menuRectSelect()">
+  <div class="menu-item touch-only" onclick="menuRectSelect()">
     <span class="menu-icon">▦</span> <span class="mtext" data-i18n="menu.rectSelect">사각 선택</span>
   </div>
   <div class="menu-item" onclick="menuCanvasBg()">
