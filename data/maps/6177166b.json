@@ -20,7 +20,8 @@
       "parentId": null,
       "shape": "round",
       "w": 351.8573469046936,
-      "h": 161.02170834602512
+      "h": 161.02170834602512,
+      "link": "https://nhnent.dooray.com/project/tasks/4357606392490631206"
     },
     {
       "id": "n3",
@@ -255,5 +256,5 @@
   ],
   "idCounter": 33,
   "name": "(최초 두레이)",
-  "updatedAt": "2026-06-21T08:19:56.873Z"
+  "updatedAt": "2026-06-21T08:39:42.042Z"
 }
