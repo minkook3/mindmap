@@ -1302,8 +1302,7 @@ function addLinkDot(g, n, geom, s) {
   const dot = document.createElementNS(NS, 'circle');
   dot.setAttribute('cx', dx); dot.setAttribute('cy', dy);
   dot.setAttribute('r', dotR);
-  dot.setAttribute('fill', '#e94560');
-  dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', Math.max(1, 1.5 * viewScale));
+  dot.setAttribute('fill', '#1f8fff');
   dot.setAttribute('pointer-events', 'none');
   g.appendChild(dot);
   g.appendChild(hit);
