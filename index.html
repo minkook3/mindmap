@@ -855,14 +855,20 @@ function updateUndoRedoButtons() {
 }
 
 const COLORS = [
-  '#ffffff','#e9ecef','#ced4da',
-  '#e94560','#e8394a','#c0392b',
-  '#0f3460','#118ab2','#26c6da',
-  '#533483','#7c4dff','#9c27b0',
-  '#06d6a0','#ffd166','#ff6d00',
-  '#000000','#54ef00','#3175ff',
-  '#ff9ff7','#7a56ff','#ff0000',
-  '#ff00a2','#5a66ff'
+  // 무채색
+  '#ffffff','#e9ecef','#ced4da','#000000',
+  // 빨강 계열
+  '#ff0000','#e8394a','#e94560','#c0392b',
+  // 주황·노랑
+  '#ff6d00','#ffd166',
+  // 초록
+  '#54ef00','#06d6a0',
+  // 청록·파랑
+  '#26c6da','#118ab2','#0f3460','#3175ff','#5a66ff',
+  // 보라
+  '#7a56ff','#7c4dff','#533483','#9c27b0',
+  // 핑크·마젠타
+  '#ff00a2','#ff9ff7'
 ];
 
 // 배경 밝기에 따라 글자색 자동 선택(밝은 노드는 어두운 글자)
@@ -2281,6 +2287,15 @@ function openColorPicker(target, anchorId) {
   picker.style.top = menu.style.top;
   menu.style.display = 'none';
   picker.style.display = 'flex';
+  // 직접 선택 입력의 시작값을 현재 색으로
+  const ci = document.getElementById('custom-color-input');
+  if (ci) {
+    let cur = '#ffffff';
+    if (target === 'canvas') cur = bgColor;
+    else { const n = getNode(contextNodeId) || [...selectedIds].map(getNode)[0];
+      if (n) cur = (target === 'text') ? (n.textColor || textColorFor(n.color)) : n.color; }
+    if (/^#[0-9a-f]{6}$/i.test(cur)) ci.value = cur;
+  }
 }
 function menuColor() { openColorPicker('bg'); }
 function menuTextColor() { openColorPicker('text'); }
@@ -2418,6 +2433,18 @@ function initColorPicker() {
     sw.onclick = () => applyColor(c);
     picker.appendChild(sw);
   });
+  // 맨 끝: 직접 색 선택(브라우저 내장 컬러 피커 — 추가 용량/성능 부담 없음)
+  const custom = document.createElement('label');
+  custom.className = 'swatch swatch-custom';
+  custom.title = '직접 선택';
+  custom.style.background = 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)';
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.id = 'custom-color-input';
+  inp.style.cssText = 'position:absolute;opacity:0;width:0;height:0;pointer-events:none;';
+  inp.addEventListener('change', () => applyColor(inp.value));   // 닫을 때 1회 적용(히스토리 깔끔)
+  custom.appendChild(inp);
+  picker.appendChild(custom);
 }
 
 // ══════════════════════════════════════════════════════════
