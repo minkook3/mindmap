@@ -114,6 +114,8 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 @media (max-width: 600px) {
   .modal { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; border-radius: 0; }
 }
+/* 단, 짧은 입력 프롬프트(링크·이름 등)는 작고 담백하게 유지 */
+#prompt-overlay .modal { width: min(420px, 92vw); max-width: 92vw; height: auto; max-height: 86vh; border-radius: 12px; }
 
 #context-menu, #canvas-menu, #line-menu {
   position: fixed; background: #16213e; border: 1px solid #2a5a9a;
@@ -490,7 +492,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 
 <!-- ── 단순 입력(이름) 프롬프트 ── -->
 <div class="modal-overlay" id="prompt-overlay">
-  <div class="modal" style="width:420px">
+  <div class="modal">
     <div class="modal-head"><h2 id="prompt-title">입력</h2>
       <button class="modal-close" onclick="closeModal('prompt-overlay')">✕</button></div>
     <div class="modal-body">
