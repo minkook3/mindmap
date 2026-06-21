@@ -97,14 +97,16 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   .swatch { width: 32px; height: 32px; }
   #color-picker { width: 168px; }
   /* 손가락 탭에 맞춰 툴바/아이콘 키움(데스크톱은 그대로) */
-  #toolbar { height: 46px; padding: 0 52px 0 8px; gap: 6px; }
-  #tb-toggle { width: 38px; height: 38px; }
-  #tb-toggle svg { width: 20px; height: 20px; }
+  #toolbar { height: 46px; padding: 0 52px 0 8px; gap: 6px; top: auto; bottom: 0; }  /* 모바일: 하단바 */
+  #tb-toggle { width: 38px; height: 38px; top: auto; bottom: 6px; }                   /* 토글도 하단으로 */
+  #tb-toggle svg { width: 20px; height: 20px; transform: rotate(180deg); }            /* 기본 ▴(위로=펼치기) */
+  #tb-toggle.open svg { transform: rotate(360deg); }                                  /* 펼침 시 ▾(아래로=접기) */
   .icon-btn { padding: 8px 11px; }
   .icon-btn svg { width: 22px; height: 22px; }
   .toolbar-title { font-size: 15px; }
   .toolbar-sep { height: 22px; }
   #cloud-status { font-size: 13px; }
+  #readonly-badge { bottom: auto; top: 10px; }     /* 모바일: 보기전용 문구를 상단 우측으로 */
   #remote-change-banner { top: 54px; }
 }
 /* 좁은 화면(폰)에서는 모달을 풀스크린으로 */
@@ -796,6 +798,7 @@ function duplicateSelected() {
 let currentMapId = null;     // 현재 열려있는 클라우드 맵 id
 let currentMapSha = null;    // 현재 맵 파일의 git blob SHA(충돌 감지용)
 let currentMapName = null;   // 현재 맵 이름
+let currentMapUpdatedAt = ''; // 현재 맵의 updatedAt(쓰기 직후 읽기 지연으로 옛 버전 되돌아가는 것 방지)
 let mapDirty = false;        // 마지막 클라우드 저장 이후 변경 여부
 let promptResolve = null;    // 입력 프롬프트 콜백
 
@@ -1403,8 +1406,9 @@ function makeEdge(svg, sNode, eNode, color, opts) {
     vis.setAttribute('stroke-width', baseW);
     vis.setAttribute('opacity', baseOp);
   });
-  hit.addEventListener('click', e => { e.stopPropagation(); onDelete(); });
-  hit.addEventListener('contextmenu', e => {
+  // 포인터 처리는 onSvgPointerDown이 __edge로 통합(탭/클릭=삭제, 터치 롱프레스=메뉴, 끌기=팬)
+  hit.__edge = { owner, sNode, eNode, onDelete };
+  hit.addEventListener('contextmenu', e => {     // 데스크톱 우클릭 → 라인 메뉴
     e.preventDefault(); e.stopPropagation();
     if (lastPointerTouch) return;
     showLineMenu(e, owner, sNode, eNode);
@@ -1711,8 +1715,13 @@ let gStart = null, gMoved = false, gKind = null;   // 단일 제스처 시작점
 let lpTimer = null, lpFired = false;   // 롱프레스 타이머
 let swallowClick = false;              // 롱프레스로 연 메뉴 직후의 합성 click 1회 무시
 const MOVE_TOL = 8;                    // 이동 확정 임계값(px)
+// 모바일 노드 제스처: 바로 끌면 화면이동, 0.5초 잡았다 끌면 노드이동, 잡았다 떼면 메뉴
+let armTimer = null, armed = false, nodeArmId = null;
+const NODE_HOLD_MS = 500;
+let currentEdge = null;                // 라인(에지) 위에서 시작한 제스처 정보
 
 function clearLP() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } }
+function clearArm() { if (armTimer) { clearTimeout(armTimer); armTimer = null; } }
 function startLP(cb) {
   clearLP(); lpFired = false;
   lpTimer = setTimeout(() => {
@@ -1726,7 +1735,7 @@ function startLP(cb) {
 }
 
 function beginPinch() {
-  clearLP();
+  clearLP(); clearArm(); armed = false; nodeArmId = null;
   isDragging = false; dragNodeId = null; isPanning = false; isMarquee = false;
   dragResize = null; dragPivot = null;
   document.getElementById('marquee').style.display = 'none';
@@ -1769,8 +1778,39 @@ function onNodePointerDown(e, id) {
   hideAll();
   gStart = { x: e.clientX, y: e.clientY }; gMoved = false; gKind = 'node';
   if (isReadOnly) return;
-  onNodeDragStart(e, id, false);              // 선택 + 더블탭 편집 + 드래그 초기화(캡처라 render 안전)
-  startLP(() => onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: e.clientX, clientY: e.clientY }, id));
+
+  if (e.pointerType !== 'touch') {
+    onNodeDragStart(e, id, false);            // 데스크톱(마우스/펜): 기존처럼 즉시 드래그
+    return;
+  }
+
+  // ── 모바일(터치) ── 바로 끌면 화면이동 / 0.5초 잡았다 끌면 노드이동 / 잡았다 떼면 메뉴
+  const now = Date.now();
+  if (lastDownId === id && (now - lastDownTime) < 350) {   // 더블탭 → 편집
+    lastDownId = null; lastDownTime = 0;
+    gKind = 'editing';
+    setTimeout(() => startEdit(id), 50);
+    return;
+  }
+  lastDownTime = now; lastDownId = id;
+  if (!selectedIds.has(id)) selectOne(id);    // 탭 선택(이미 선택된 다중 선택은 유지 → 그룹 이동)
+  render();
+  isPanning = true;                            // 기본: 화면 팬 후보(바로 움직이면 팬)
+  panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
+  nodeArmId = id; armed = false;
+  clearArm();
+  armTimer = setTimeout(() => {                // 0.5초 가만히 잡고 있으면 노드 드래그로 전환
+    armTimer = null;
+    if (gMoved) return;                        // 그 사이 움직였으면(=팬) 무장 안 함
+    isPanning = false;
+    isDragging = true; dragNodeId = id;
+    const w = s2w(gStart.x, gStart.y);
+    const n = getNode(id);
+    if (n) dragOffset = { x: w.x - n.x, y: w.y - n.y };
+    armed = true;
+    if (navigator.vibrate) navigator.vibrate(25);
+    render();
+  }, NODE_HOLD_MS);
 }
 
 // 빈 곳/배경에서 시작하는 포인터
@@ -1782,10 +1822,20 @@ function onSvgPointerDown(e) {
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 2) { beginPinch(); return; }
   isDragging = false; dragNodeId = null;      // 잔류 드래그 제거
+  const ei = document.getElementById('edit-input');   // 편집 중 빈 배경 터치 → 편집 완료(blur=commit)
+  if (ei && ei.style.display === 'block') { ei.blur(); }
   hideAll();
   gStart = { x: e.clientX, y: e.clientY }; gMoved = false; gKind = 'empty';
   const onEmpty = (e.target === svg || e.target.tagName === 'svg');
   const isMouse = (e.pointerType === 'mouse');
+  // 라인(에지) 위: 탭/클릭=삭제, 길게 누르기(터치)·우클릭(마우스)=라인 메뉴, 끌기=화면 팬
+  const edge = e.target && e.target.__edge;
+  if (edge && !isReadOnly) {
+    gKind = 'edge'; currentEdge = edge;
+    if (!isMouse) startLP(() => showLineMenu({ clientX: e.clientX, clientY: e.clientY }, edge.owner, edge.sNode, edge.eNode));
+    if (!connecting) { isPanning = true; panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale }; }
+    return;
+  }
   // 마우스 좌클릭(편집모드, Space 아님, 빈 곳) → 마키 선택
   if (!isReadOnly && !connecting && isMouse && e.button === 0 && !spaceDown && onEmpty) {
     if (!e.shiftKey) selectNone();
@@ -1809,6 +1859,7 @@ function onPointerMove(e) {
   if (pinch && ptrs.size >= 2) { updatePinch(); return; }
   if (gStart && !gMoved && (Math.abs(e.clientX - gStart.x) > MOVE_TOL || Math.abs(e.clientY - gStart.y) > MOVE_TOL)) {
     gMoved = true; clearLP();               // 8px 넘으면 이동 확정 → 롱프레스 취소
+    if (armTimer && !armed) { clearArm(); }  // 무장 전 이동 = 화면 팬 확정(노드 드래그 무장 취소)
   }
   if (dragResize) {
     const n = getNode(dragResize.id);
@@ -1862,18 +1913,27 @@ function onPointerMove(e) {
 }
 
 function finishGesture(e) {
+  clearArm();
   if (dragResize) { recordHistory(); dragResize = null; }
   if (dragPivot) { recordHistory(); dragPivot = null; }
   if (isMarquee) { isMarquee = false; document.getElementById('marquee').style.display = 'none'; }
   if (isDragging && gMoved) recordHistory();
   if (!gMoved && !lpFired) {                  // 탭(이동·롱프레스 없음)
     if (connecting) { cancelConnecting(); }
+    else if (gKind === 'edge') {              // 라인 탭/클릭 → 삭제
+      if (currentEdge && currentEdge.onDelete) currentEdge.onDelete();
+    }
+    else if (gKind === 'node' && armed) {     // 0.5초 잡았다 움직이지 않고 뗌 → 노드 메뉴(A)
+      swallowClick = true;
+      onNodeRightClick({ preventDefault() {}, stopPropagation() {}, clientX: e.clientX, clientY: e.clientY }, nodeArmId);
+    }
     else if (gKind === 'empty') {
       if (!emptyDoubleFit(e.clientX, e.clientY)) { hideAll(); selectNone(); }
     }
-    // gKind === 'node': 선택은 pointerdown에서 이미 처리됨
+    // gKind === 'node'(무장 전): 선택은 pointerdown에서 이미 처리됨
   }
   isDragging = false; dragNodeId = null; isPanning = false;
+  armed = false; nodeArmId = null; currentEdge = null;
   gMoved = false; gStart = null; gKind = null;
   render();
 }
@@ -1885,7 +1945,7 @@ function onPointerUp(e) {
   if (pinch) {                                // 핀치 중 손가락 하나 뗌
     if (ptrs.size < 2) pinch = null;
     isDragging = false; dragNodeId = null; isPanning = false; gKind = null; gStart = null;
-    clearLP();
+    clearLP(); clearArm(); armed = false; nodeArmId = null;
     if (ptrs.size === 0) render();
     return;
   }
@@ -1896,7 +1956,7 @@ function onPointerUp(e) {
 
 function onPointerCancel(e) {
   ptrs.delete(e.pointerId);
-  clearLP(); pinch = null;
+  clearLP(); clearArm(); pinch = null; armed = false; nodeArmId = null; currentEdge = null;
   if (isDragging && gMoved) recordHistory();
   if (dragResize) { recordHistory(); dragResize = null; }
   if (dragPivot) { recordHistory(); dragPivot = null; }
@@ -2006,8 +2066,15 @@ function toggleTbMenu(e) {
   hideAll();
   if (open) return;
   const tb = document.getElementById('toolbar').getBoundingClientRect();
-  d.style.top = tb.bottom + 'px';
   d.style.left = '8px';
+  // 하단바(모바일)면 위로, 상단바(데스크톱)면 아래로 펼침
+  if (matchMedia('(pointer: coarse)').matches) {
+    d.style.top = 'auto';
+    d.style.bottom = (window.innerHeight - tb.top) + 'px';
+  } else {
+    d.style.bottom = 'auto';
+    d.style.top = tb.bottom + 'px';
+  }
   d.style.display = 'block';
 }
 function tbRun(fn) { hideAll(); fn(); }
@@ -2168,16 +2235,17 @@ function startEdit(id) {
     input.style.display = 'none';
     render();
   };
+  const touchEdit = matchMedia('(pointer: coarse)').matches;   // 모바일: 엔터=줄바꿈, 완료는 빈 배경 터치
   input.onkeydown = e => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      // Ctrl+Enter → 커서 위치에 줄바꿈 삽입
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || touchEdit)) {
+      // 줄바꿈 삽입 (데스크톱: Ctrl/⌘+Enter, 모바일: 그냥 Enter)
       e.preventDefault();
       const p = input.selectionStart, q = input.selectionEnd;
       input.value = input.value.slice(0, p) + '\n' + input.value.slice(q);
       input.selectionStart = input.selectionEnd = p + 1;
       autosize();
     } else if (e.key === 'Enter') {
-      e.preventDefault(); commit();
+      e.preventDefault(); commit();        // 데스크톱: Enter=완료
     } else if (e.key === 'Escape') {
       cancelEdit();
     }
@@ -2368,6 +2436,7 @@ async function loadMapById(id) {
   currentMapName = r.data.name || deriveMapName(r.data) || id;
   viewX = 0; viewY = 0; viewScale = 1; selectNone();
   mapDirty = false;
+  currentMapUpdatedAt = (r.data && r.data.updatedAt) || '';
   render(); resetHistory();
   setCloudStatus('synced', currentMapName + t('st.syncedSuffix'));
   maybeTranslate();
@@ -2381,8 +2450,9 @@ async function cloudSave() {
   }
   setCloudStatus('dirty', t('st.saving'));
   try {
-    const sha = await ghPutFile(mapPath(currentMapId), getMapPayload(), currentMapSha, 'update map: ' + currentMapName);
-    currentMapSha = sha; mapDirty = false;
+    const payload = getMapPayload();
+    const sha = await ghPutFile(mapPath(currentMapId), payload, currentMapSha, 'update map: ' + currentMapName);
+    currentMapSha = sha; currentMapUpdatedAt = payload.updatedAt; mapDirty = false;
     setCloudStatus('synced', currentMapName + t('st.savedSuffix'));
     showToast(t('msg.saved'));
   } catch (e) {
@@ -2467,6 +2537,9 @@ async function checkRemoteChanges() {
   try {
     const r = await ghGetFile(mapPath(currentMapId));
     if (!r || r.sha === currentMapSha) { hideRemoteBanner(); return; }
+    // 쓰기 직후 읽기 지연(stale): 원격이 내 저장 시각보다 같거나 오래됐으면 옛 버전 → 무시(되돌리지 않음)
+    const remoteAt = (r.data && r.data.updatedAt) || '';
+    if (remoteAt && currentMapUpdatedAt && remoteAt <= currentMapUpdatedAt) { hideRemoteBanner(); return; }
     if (mapDirty) {
       // 내 미저장 변경이 있으면 덮어쓰지 않고 배너로만 알림
       remoteChangePending = true;
