@@ -474,6 +474,7 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
         <div class="lang-toggle">
           <button type="button" id="lang-ko" onclick="setLang('ko')">한국어</button>
           <button type="button" id="lang-en" onclick="setLang('en')">English</button>
+          <button type="button" id="lang-ja" onclick="setLang('ja')">日本語</button>
         </div>
       </div>
       <div class="field">
@@ -651,6 +652,31 @@ const I18N = {
     'sc.kb':'Shortcuts — Keyboard (click to change)', 'sc.reset':'Reset shortcuts to default', 'sc.mouse':'Mouse · Gestures (fixed)',
     'sc.act':{ undo:'Undo', redo:'Redo', save:'Save to GitHub', selectAll:'Select all', duplicate:'Duplicate node', editNode:'Edit selected node', del:'Delete selected (Mac: ⌫ Backspace)', fit:'Fit to screen (show all nodes)' },
     'gestures':[ ['Zoom in / out','Mouse wheel'], ['Selection box (multi-select)','Drag empty space (left)'], ['Add · remove from selection','Shift + click/drag'], ['Move node (all if multi-selected)','Drag node'], ['Pan view','Middle button / Space + drag'], ['Edit text','Double-click node'], ['Open menu','Right-click'], ['Delete line','Click line'] ]
+  },
+  ja: {
+    'tb.maps':'📁 マイマップ', 'tb.save':'☁ 保存', 'tb.settings':'⚙ 設定',
+    'tb.undo':'↶ 元に戻す', 'tb.redo':'↷ やり直し', 'tb.share':'🔗 共有リンクをコピー',
+    'tb.saveT':'GitHubに保存 (Ctrl+S)', 'tb.settingsT':'リポジトリ・トークン設定',
+    'tb.undoT':'元に戻す (Ctrl+Z)', 'tb.redoT':'やり直し (Ctrl+Y)',
+    'badge.readonly':'読み取り専用', 'badge.viewer':'閲覧のみ · 編集するにはトークンを入力',
+    'banner.remote':'🔄 他の人がこのマップを編集しました · クリックして再読み込み',
+    'hint.bar':'空白ドラッグ: 選択ボックス &nbsp;|&nbsp; 中ボタン/Spaceドラッグ: 画面移動 &nbsp;|&nbsp; ホイール: ズーム &nbsp;|&nbsp; ダブルクリック: 編集 &nbsp;|&nbsp; 右クリック: メニュー &nbsp;|&nbsp; ショートカットは⚙設定参照',
+    'dash.title':'📁 マイマップ', 'dash.refresh':'↻ 更新', 'dash.new':'＋ 新規マップ',
+    'dash.loading':'読み込み中…', 'dash.empty':'保存されたマップがありません。「新規マップ」で始めましょう。',
+    'dash.open':'開く', 'dash.link':'リンク', 'dash.rename':'名前', 'dash.dup':'複製', 'dash.del':'削除',
+    'dash.needToken':'リストを読むには権限が必要かもしれません。設定でトークンを入力してください。', 'dash.loadErr':'リストを読み込めませんでした:',
+    'set.title':'⚙ 設定', 'set.lang':'言語 (Language)',
+    'cpick.title':'色を選択', 'cpick.apply':'適用',
+    'tbm.maps':'マイマップを開く', 'tbm.save':'保存', 'tbm.settings':'設定', 'tbm.share':'共有リンクをコピー', 'tbm.present':'プレゼンモード', 'tbm.translate':'翻訳 (ノード文言)', 'tbm.trOrig':'原文',
+    'set.tokenLabel':'GitHub 個人アクセストークン (PAT)',
+    'set.tokenPh':'github_pat_… (このリポジトリの Contents 読み書き)',
+    'set.tokenHint':'ブラウザ(localStorage)にのみ保存され、サーバーには送信されません。GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> で <b>このmindmapリポジトリだけ</b> に <b>Contents: Read and write</b> 権限で発行してください。有効期限は90日推奨。',
+    'set.apiLabel':'APIアドレス', 'set.repoLabel':'リポジトリ (owner / name)', 'set.branchLabel':'ブランチ / データフォルダ',
+    'set.pathHint':'マップは <code>&lt;ブランチ&gt;</code> ブランチの <code>&lt;フォルダ&gt;/&lt;id&gt;.json</code> に保存されます。',
+    'set.cancel':'キャンセル', 'set.save':'保存',
+    'sc.kb':'ショートカット — キーボード (クリックで変更)', 'sc.reset':'ショートカットを初期値に戻す', 'sc.mouse':'マウス · ジェスチャー (固定)',
+    'sc.act':{ undo:'元に戻す', redo:'やり直し', save:'GitHubに保存', selectAll:'すべて選択', duplicate:'ノードを複製', editNode:'選択ノードを編集', del:'選択ノードを削除 (Mac: ⌫ Backspace)', fit:'画面に合わせる(全ノード表示)' },
+    'gestures':[ ['拡大 / 縮小','マウスホイール'], ['選択ボックス(複数選択)','空白を左ドラッグ'], ['選択の追加・解除','Shift + クリック/ドラッグ'], ['ノード移動 (複数選択時は一緒に)','ノードをドラッグ'], ['画面移動(パン)','中ボタン / Space + ドラッグ'], ['テキスト編集','ノードをダブルクリック'], ['メニューを開く','右クリック'], ['ライン削除','ラインをクリック'] ]
   }
 };
 Object.assign(I18N.ko, {
@@ -693,6 +719,26 @@ Object.assign(I18N.en, {
   'pr.rename':'Rename map','pr.saveAsNew':'Save current map under a new name','pr.newMap':'New map name','pr.defaultMapName':'New mindmap',
   'pr.linkTitle':'Link URL — leave empty to remove','msg.linkSet':'Link set','msg.linkRemoved':'Link removed'
 });
+Object.assign(I18N.ja, {
+  'msg.keysReset':'ショートカットを初期値に戻しました','msg.copiedN':'{0}個のノードをコピーしました','msg.copied1':'ノードをコピーしました',
+  'msg.loadMapFail':'クラウドマップを読み込めませんでした','msg.alreadyLinked':'すでに同じ方向で接続されています','msg.linked':'接続しました',
+  'msg.clickToConnect':'接続するノードをクリック (ESC: キャンセル)','msg.keyInUse':'すでに "{0}" で使用中のキーです','msg.keyChanged':'ショートカットを変更しました',
+  'msg.customLineHint':'カスタムライン — "ライン編集"をオンにするとピボットをドラッグできます','msg.allCustom':'すべてのラインをカスタムに変更しました — "ライン編集"でピボット調整可','msg.allStraight':'すべてのラインを直線に変更しました',
+  'msg.editLinesOn':'ライン編集 ON — カスタムラインのピボットをドラッグ','msg.editLinesOff':'ライン編集 OFF','msg.resizeOn':'ノードサイズ変更 ON — 端のハンドルをドラッグ','msg.resizeOff':'ノードサイズ変更 OFF',
+  'msg.needTokenSettings':'保存するには設定でGitHubトークンを入力してください','msg.saved':'GitHubに保存しました','msg.authFail':'トークンがないか権限が不足しています ({0})','msg.saveFail':'保存に失敗しました',
+  'msg.renamed':'名前を変更しました','msg.duplicated':'複製しました','msg.deleted':'削除しました','msg.authFailShort':'トークンがないか権限が不足しています','msg.error':'エラーが発生しました',
+  'msg.remoteApplied':'他の人の変更が反映されました','msg.latestLoaded':'最新バージョンを読み込みました','msg.needToken2':'保存するには設定でトークンを入力してください','msg.savedAsNew':'新しいマップとして保存しました','msg.mapCreated':'マップを作成しました',
+  'msg.settingsSaved':'設定を保存しました','msg.shareCopied':'共有リンクをコピーしました (編集可能)','msg.localSaved':'保存しました','msg.localSaveFail':'保存に失敗: {0}','msg.noLocal':'保存されたデータがありません','msg.loaded':'読み込みました','msg.loadFail':'読み込みに失敗しました',
+  'msg.translating':'翻訳中…','msg.translated':'翻訳完了','msg.translatePartial':'一部の翻訳に失敗 ({0}件) — ネットワーク確認',
+  'msg.rectHint':'ドラッグしてノードを選択',
+  'msg.dirtyShareHint':'未保存の変更があります — "☁ 保存"後に共有すると最新が反映されます','msg.openFirst':'まず "📁 マイマップ" でマップを開くか作成してから共有してください','msg.mapWord':'マップ',
+  'msg.presentOn':'プレゼンモード — 移動/ズームのみ、ESC(または✕)で終了',
+  'msg.fitView':'画面に合わせました',
+  'st.loading':'読み込み中…','st.loadFail':'読み込み失敗','st.localIdle':'','st.syncedSuffix':' · 同期済み','st.saving':'保存中…','st.savedSuffix':' · 保存済み','st.conflict':'競合発生','st.authFail':'認証失敗','st.saveFail':'保存失敗','st.localIdleShort':'','st.dirtySuffix':' · 変更あり(未保存)',
+  'cf.conflict':'他の人がこのマップを先に編集しました。\n[OK] 最新を読み込む (現在の変更は破棄されます)\n[キャンセル] そのままにする','cf.deleteMap':'"{0}" マップを削除しますか？元に戻せません。','cf.reloadLose':'最新を読み込むと未保存の変更は失われます。\n続行しますか？','cf.newClear':'現在の作業を消して新しく始めますか？',
+  'pr.rename':'マップ名を変更','pr.saveAsNew':'現在のマップを新しい名前で保存','pr.newMap':'新しいマップ名','pr.defaultMapName':'新しいマインドマップ',
+  'pr.linkTitle':'リンクURL — 空にすると削除','msg.linkSet':'リンクを設定しました','msg.linkRemoved':'リンクを削除しました'
+});
 function tf(key){ var a=arguments; return String(t(key)).replace(/\{(\d+)\}/g, function(_, i){ return a[+i+1] != null ? a[+i+1] : ''; }); }
 Object.assign(I18N.ko, {
   'tb.mapsT':'내 맵',
@@ -712,7 +758,16 @@ Object.assign(I18N.en, {
   'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.canvasBg':'Background color','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines',
   'menu.linkAdd':'Insert link','menu.linkEdit':'Edit link'
 });
-function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
+Object.assign(I18N.ja, {
+  'tb.mapsT':'マイマップ',
+  'menu.addChild':'子ノードを追加','menu.connect':'ラインを接続','menu.editText':'テキスト編集','menu.textColor':'テキスト色',
+  'menu.shape':'ノード形状','menu.shapeRect':'四角','menu.shapeRound':'角丸','menu.shapeCircle':'円形',
+  'menu.nodeColor':'ノード色','menu.resize':'ノードサイズ変更','menu.delete':'削除',
+  'menu.selectNodes':'ノード選択','menu.selChildren':'子ノード','menu.selAll':'すべてのノード',
+  'menu.createNode':'ノード作成','menu.rectSelect':'矩形選択','menu.canvasBg':'背景色','menu.straightLine':'直線ライン','menu.customLine':'カスタムライン','menu.editLines':'ライン編集',
+  'menu.linkAdd':'リンク挿入','menu.linkEdit':'リンク編集'
+});
+function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko' || l === 'ja') ? l : 'ko'; }
 function setLang(l) { localStorage.setItem('mm_lang', l); applyLang(); }
 // 타이틀 표시/숨김 (기본 표시)
 function t(key) { const d = I18N[getLang()]; return (d && d[key] != null) ? d[key] : (I18N.ko[key] != null ? I18N.ko[key] : key); }
@@ -722,8 +777,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n]').forEach(el => { const v = I18N[lang][el.getAttribute('data-i18n')]; if (v != null) el.innerHTML = v; });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { const v = I18N[lang][el.getAttribute('data-i18n-ph')]; if (v != null) el.placeholder = v; });
   document.querySelectorAll('[data-i18n-title]').forEach(el => { const v = I18N[lang][el.getAttribute('data-i18n-title')]; if (v != null) el.title = v; });
-  const ko = document.getElementById('lang-ko'), en = document.getElementById('lang-en');
-  if (ko && en) { ko.classList.toggle('active', lang === 'ko'); en.classList.toggle('active', lang === 'en'); }
+  ['ko', 'en', 'ja'].forEach(L => { const b = document.getElementById('lang-' + L); if (b) b.classList.toggle('active', lang === L); });
   if (document.getElementById('shortcut-section')) renderShortcutHelp();
 }
 
@@ -2853,7 +2907,8 @@ function renderDashList() {
   dashMaps.forEach(m => {
     const row = document.createElement('div');
     row.className = 'map-row' + (m.id === currentMapId ? ' active' : '') + (m.id === dashSelId ? ' sel' : '');
-    const when = m.updatedAt ? new Date(m.updatedAt).toLocaleString(getLang() === 'en' ? 'en-US' : 'ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    const loc = getLang() === 'ja' ? 'ja-JP' : (getLang() === 'en' ? 'en-US' : 'ko-KR');
+    const when = m.updatedAt ? new Date(m.updatedAt).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'short' }) : '';
     row.innerHTML = `<span class="map-name">${escapeHtml(m.name || m.id)}</span><span class="map-meta">${when}</span>`;
     row.onclick = () => selectDashRow(m.id);
     row.ondblclick = () => { dashSelId = m.id; daOpen(); };   // 더블탭/더블클릭 → 바로 열기
