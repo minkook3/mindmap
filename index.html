@@ -1504,7 +1504,7 @@ function openCanvasMenuAt(cx, cy) {
 let touchState = null, longPressTimer = null, longPressFired = false;
 let touchMoved = false, touchStartPos = null, touchOnCanvas = false;
 let lastPointerTouch = false;   // 마지막 입력이 터치였는지(네이티브 우클릭 메뉴 차단용)
-const LONGPRESS_MS = 500, TOUCH_MOVE_TOL = 10;
+const LONGPRESS_MS = 1000, TOUCH_MOVE_TOL = 10;   // 1초 이상 가만히 누르면 메뉴, 그 안에 움직이면 이동
 
 function tDist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
 function tMid(a, b) { return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
