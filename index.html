@@ -118,6 +118,17 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 #prompt-overlay { align-items: flex-start; }
 #prompt-overlay .modal { width: min(420px, 92vw); max-width: 92vw; height: auto; max-height: 86vh; border-radius: 12px; margin-top: 6vh; }
 
+/* 인앱 컬러 피커(HSV) — 데스크톱·모바일 동일 */
+#cpick-overlay { align-items: flex-start; }
+#cpick-overlay .modal { width: min(280px, 92vw); max-width: 92vw; height: auto; max-height: 86vh; border-radius: 12px; margin-top: 6vh; }
+#cpick-sv { position: relative; width: 100%; height: 150px; border-radius: 6px; cursor: crosshair; touch-action: none; }
+#cpick-sv-cursor { position: absolute; width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 3px rgba(0,0,0,.7); pointer-events: none; }
+#cpick-hue { position: relative; width: 100%; height: 16px; border-radius: 8px; margin-top: 14px; cursor: pointer; touch-action: none;
+  background: linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00); }
+#cpick-hue-thumb { position: absolute; top: 50%; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 3px rgba(0,0,0,.7); pointer-events: none; }
+#cpick-preview { width: 36px; height: 36px; border-radius: 6px; border: 1px solid #2a5a9a; flex: none; }
+#cpick-hex { flex: 1; background: #0f1b33; color: #fff; border: 1px solid #21406e; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; }
+
 #context-menu, #canvas-menu, #line-menu {
   position: fixed; background: #16213e; border: 1px solid #2a5a9a;
   border-radius: 8px; padding: 4px 0; min-width: 170px;
@@ -509,6 +520,26 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   </div>
 </div>
 
+<!-- ── 인앱 컬러 피커 ── -->
+<div class="modal-overlay" id="cpick-overlay">
+  <div class="modal">
+    <div class="modal-head"><h2 data-i18n="cpick.title">색상 선택</h2>
+      <button class="modal-close" onclick="closeModal('cpick-overlay')">✕</button></div>
+    <div class="modal-body">
+      <div id="cpick-sv"><div id="cpick-sv-cursor"></div></div>
+      <div id="cpick-hue"><div id="cpick-hue-thumb"></div></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+        <div id="cpick-preview"></div>
+        <input id="cpick-hex" maxlength="7" spellcheck="false" placeholder="#000000">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="closeModal('cpick-overlay')" data-i18n="set.cancel">취소</button>
+      <button class="ok-btn" onclick="cpickOK()" data-i18n="cpick.apply">적용</button>
+    </div>
+  </div>
+</div>
+
 <script src="pako.min.js"></script>
 <script>
 // ── STATE ──
@@ -584,6 +615,7 @@ const I18N = {
     'dash.open':'열기', 'dash.link':'링크', 'dash.rename':'이름', 'dash.dup':'복제', 'dash.del':'삭제',
     'dash.needToken':'목록을 읽으려면 권한이 필요할 수 있습니다. 설정에서 토큰을 입력해 보세요.', 'dash.loadErr':'목록을 불러오지 못했습니다:',
     'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
+    'cpick.title':'색상 선택', 'cpick.apply':'적용',
     'tbm.maps':'내 맵 열기', 'tbm.save':'저장', 'tbm.settings':'설정', 'tbm.share':'공유 링크 복사', 'tbm.present':'발표 모드', 'tbm.translate':'번역 (노드 문구)', 'tbm.trOrig':'원문',
     'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
     'set.tokenPh':'github_pat_… (이 레포 Contents 읽기/쓰기)',
@@ -608,6 +640,7 @@ const I18N = {
     'dash.open':'Open', 'dash.link':'Link', 'dash.rename':'Rename', 'dash.dup':'Duplicate', 'dash.del':'Delete',
     'dash.needToken':'You may need permission to read the list. Try entering a token in Settings.', 'dash.loadErr':'Failed to load the list:',
     'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
+    'cpick.title':'Pick a color', 'cpick.apply':'Apply',
     'tbm.maps':'Open My Maps', 'tbm.save':'Save', 'tbm.settings':'Settings', 'tbm.share':'Copy share link', 'tbm.present':'Presentation', 'tbm.translate':'Translate (node text)', 'tbm.trOrig':'Original',
     'set.tokenLabel':'GitHub Personal Access Token (PAT)',
     'set.tokenPh':'github_pat_… (Contents read/write on this repo)',
@@ -2287,15 +2320,6 @@ function openColorPicker(target, anchorId) {
   picker.style.top = menu.style.top;
   menu.style.display = 'none';
   picker.style.display = 'flex';
-  // 직접 선택 입력의 시작값을 현재 색으로
-  const ci = document.getElementById('custom-color-input');
-  if (ci) {
-    let cur = '#ffffff';
-    if (target === 'canvas') cur = bgColor;
-    else { const n = getNode(contextNodeId) || [...selectedIds].map(getNode)[0];
-      if (n) cur = (target === 'text') ? (n.textColor || textColorFor(n.color)) : n.color; }
-    if (/^#[0-9a-f]{6}$/i.test(cur)) ci.value = cur;
-  }
 }
 function menuColor() { openColorPicker('bg'); }
 function menuTextColor() { openColorPicker('text'); }
@@ -2433,18 +2457,92 @@ function initColorPicker() {
     sw.onclick = () => applyColor(c);
     picker.appendChild(sw);
   });
-  // 맨 끝: 직접 색 선택(브라우저 내장 컬러 피커 — 추가 용량/성능 부담 없음)
-  const custom = document.createElement('label');
+  // 맨 끝: 직접 색 선택(인앱 HSV 피커 — 데스크톱·모바일 동일)
+  const custom = document.createElement('div');
   custom.className = 'swatch swatch-custom';
   custom.title = '직접 선택';
-  custom.style.background = 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)';
-  const inp = document.createElement('input');
-  inp.type = 'color';
-  inp.id = 'custom-color-input';
-  inp.style.cssText = 'position:absolute;opacity:0;width:0;height:0;pointer-events:none;';
-  inp.addEventListener('change', () => applyColor(inp.value));   // 닫을 때 1회 적용(히스토리 깔끔)
-  custom.appendChild(inp);
+  // 30°마다 채운 HSL 무지개 → 탁한 띠 없이 매끄럽게 원을 꽉 채움
+  custom.style.background = 'conic-gradient(' +
+    Array.from({ length: 13 }, (_, i) => 'hsl(' + (i * 30) + ' 100% 50%)').join(',') + ')';
+  custom.onclick = openCustomPicker;
   picker.appendChild(custom);
+  setupCustomPicker();
+}
+
+// ── 인앱 HSV 컬러 피커 ──
+let cpH = 0, cpS = 1, cpV = 1;            // 색조(0~360), 채도/명도(0~1)
+function hsvToRgb(h, s, v) {
+  h /= 360; let r, g, b;
+  const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;  case 1: r = q; g = v; b = p; break;  case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;  case 4: r = t; g = p; b = v; break;  default: r = v; g = p; b = q;
+  }
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+}
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) { if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; if (h < 0) h += 360; }
+  return { h, s: mx ? d / mx : 0, v: mx };
+}
+function hx2(n) { return n.toString(16).padStart(2, '0'); }
+function cpHex() { const c = hsvToRgb(cpH, cpS, cpV); return '#' + hx2(c.r) + hx2(c.g) + hx2(c.b); }
+function cpSetFromHex(hex) {
+  if (!/^#?[0-9a-f]{6}$/i.test(hex || '')) return false;
+  hex = hex.replace('#', '');
+  const hsv = rgbToHsv(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16));
+  cpH = hsv.h; cpS = hsv.s; cpV = hsv.v; return true;
+}
+function cpRender() {
+  const sv = document.getElementById('cpick-sv');
+  sv.style.background = 'linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(' + cpH + ',100%,50%)';
+  document.getElementById('cpick-sv-cursor').style.left = (cpS * 100) + '%';
+  document.getElementById('cpick-sv-cursor').style.top = ((1 - cpV) * 100) + '%';
+  document.getElementById('cpick-hue-thumb').style.left = (cpH / 360 * 100) + '%';
+  const hex = cpHex();
+  document.getElementById('cpick-preview').style.background = hex;
+  const hi = document.getElementById('cpick-hex');
+  if (document.activeElement !== hi) hi.value = hex;
+}
+function openCustomPicker() {
+  hideAll();
+  let cur = '#ffffff';
+  if (colorTarget === 'canvas') cur = bgColor;
+  else { const n = getNode(contextNodeId) || [...selectedIds].map(getNode)[0];
+    if (n) cur = (colorTarget === 'text') ? (n.textColor || textColorFor(n.color)) : n.color; }
+  cpSetFromHex(cur);
+  cpRender();
+  document.getElementById('cpick-overlay').style.display = 'flex';
+}
+function cpickOK() { closeModal('cpick-overlay'); applyColor(cpHex()); }
+function setupCustomPicker() {
+  const sv = document.getElementById('cpick-sv'), hue = document.getElementById('cpick-hue');
+  const svFn = e => {
+    const r = sv.getBoundingClientRect();
+    cpS = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    cpV = Math.min(1, Math.max(0, 1 - (e.clientY - r.top) / r.height));
+    cpRender();
+  };
+  const hueFn = e => {
+    const r = hue.getBoundingClientRect();
+    cpH = Math.min(360, Math.max(0, (e.clientX - r.left) / r.width * 360));
+    cpRender();
+  };
+  const dragify = (el, fn) => {
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      fn(e);
+      const mv = ev => fn(ev);
+      const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+      el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    });
+  };
+  dragify(sv, svFn); dragify(hue, hueFn);
+  const hi = document.getElementById('cpick-hex');
+  hi.addEventListener('input', () => { if (cpSetFromHex(hi.value)) cpRender(); });
+  hi.addEventListener('keydown', e => { if (e.key === 'Enter') cpickOK(); });
 }
 
 // ══════════════════════════════════════════════════════════
