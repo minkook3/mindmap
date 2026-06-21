@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <title>MindMap</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,6 +47,19 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   .menu-item { padding: 12px 18px; font-size: 14px; }
   .swatch { width: 32px; height: 32px; }
   #color-picker { width: 168px; }
+  /* 손가락 탭에 맞춰 툴바/아이콘 키움(데스크톱은 그대로) */
+  #toolbar { height: 46px; padding: 0 8px; gap: 6px; }
+  #canvas { top: 46px; height: calc(100% - 46px); }
+  .icon-btn { padding: 8px 11px; }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .toolbar-title { font-size: 15px; }
+  .toolbar-sep { height: 22px; }
+  #cloud-status { font-size: 13px; }
+  #readonly-badge, #remote-change-banner { top: 54px; }
+}
+/* 좁은 화면(폰)에서는 모달을 풀스크린으로 */
+@media (max-width: 600px) {
+  .modal { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; border-radius: 0; }
 }
 
 #context-menu, #canvas-menu, #line-menu {
@@ -346,6 +360,13 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
         </div>
       </div>
       <div class="field">
+        <label data-i18n="set.titleVis">MindMap 타이틀 표시</label>
+        <div class="lang-toggle">
+          <button type="button" id="title-on" onclick="setShowTitle(true)" data-i18n="set.show">표시</button>
+          <button type="button" id="title-off" onclick="setShowTitle(false)" data-i18n="set.hide">숨김</button>
+        </div>
+      </div>
+      <div class="field">
         <label data-i18n="set.tokenLabel">GitHub 개인 액세스 토큰 (PAT)</label>
         <input type="password" id="cfg-token" data-i18n-ph="set.tokenPh" placeholder="github_pat_… (이 레포 Contents 읽기/쓰기)">
         <div class="hint-text" data-i18n="set.tokenHint">브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.</div>
@@ -457,6 +478,7 @@ const I18N = {
     'dash.title':'📁 내 맵', 'dash.refresh':'↻ 새로고침', 'dash.new':'＋ 새 맵 만들기',
     'dash.loading':'불러오는 중…', 'dash.empty':'저장된 맵이 없습니다. “새 맵 만들기”로 시작하세요.',
     'set.title':'⚙ 설정', 'set.lang':'언어 (Language)',
+    'set.titleVis':'MindMap 타이틀 표시', 'set.show':'표시', 'set.hide':'숨김',
     'set.tokenLabel':'GitHub 개인 액세스 토큰 (PAT)',
     'set.tokenPh':'github_pat_… (이 레포 Contents 읽기/쓰기)',
     'set.tokenHint':'브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다. GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> 에서 <b>이 mindmap 레포 하나에만</b> <b>Contents: Read and write</b> 권한으로 발급하세요. 만료는 90일 권장.',
@@ -478,6 +500,7 @@ const I18N = {
     'dash.title':'📁 My Maps', 'dash.refresh':'↻ Refresh', 'dash.new':'＋ New map',
     'dash.loading':'Loading…', 'dash.empty':'No saved maps yet. Start with “New map”.',
     'set.title':'⚙ Settings', 'set.lang':'Language (언어)',
+    'set.titleVis':'Show MindMap title', 'set.show':'Show', 'set.hide':'Hide',
     'set.tokenLabel':'GitHub Personal Access Token (PAT)',
     'set.tokenPh':'github_pat_… (Contents read/write on this repo)',
     'set.tokenHint':'Stored only in your browser (localStorage), never sent to a server. Create it under GitHub → Settings → Developer settings → <b>Fine-grained tokens</b>, scoped to <b>only this mindmap repo</b> with <b>Contents: Read and write</b>. 90-day expiry recommended.',
@@ -538,6 +561,15 @@ Object.assign(I18N.en, {
 });
 function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko') ? l : 'ko'; }
 function setLang(l) { localStorage.setItem('mm_lang', l); applyLang(); }
+// 타이틀 표시/숨김 (기본 표시)
+function getShowTitle() { return localStorage.getItem('mm_showTitle') !== '0'; }
+function setShowTitle(v) { localStorage.setItem('mm_showTitle', v ? '1' : '0'); applyTitleVis(); }
+function applyTitleVis() {
+  const show = getShowTitle();
+  const tt = document.querySelector('.toolbar-title'); if (tt) tt.style.display = show ? '' : 'none';
+  const on = document.getElementById('title-on'), off = document.getElementById('title-off');
+  if (on && off) { on.classList.toggle('active', show); off.classList.toggle('active', !show); }
+}
 function t(key) { const d = I18N[getLang()]; return (d && d[key] != null) ? d[key] : (I18N.ko[key] != null ? I18N.ko[key] : key); }
 function applyLang() {
   const lang = getLang();
@@ -728,6 +760,7 @@ function textColorFor(hex) {
 window.addEventListener('DOMContentLoaded', () => {
   loadKeys();
   applyLang();          // 저장된 언어(한/영) UI 반영
+  applyTitleVis();      // 타이틀 표시/숨김 반영
   initColorPicker();
   setupEvents();
   setupTouch();
