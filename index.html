@@ -1030,6 +1030,7 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch(e) { initDefault(); }
     initTrForMap();
     render(); resetHistory();
+    fitView();                 // 노드 전체가 화면에 꽉 차게 시작
     maybeTranslate();
 
   } else {
@@ -1038,6 +1039,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!loadFromLocal(true)) initDefault();
     initTrForMap();
     render(); resetHistory();
+    fitView();                 // 노드 전체가 화면에 꽉 차게 시작
     setCloudStatus('', t('st.localIdle'));
     updateReadonlyBanner();
     maybeTranslate();
@@ -2426,7 +2428,7 @@ async function createMap(name) {
   return { id, sha };
 }
 
-async function loadMapById(id) {
+async function loadMapById(id, keepView) {
   const r = await ghGetFile(mapPath(id));
   if (!r) throw new Error('맵을 찾을 수 없습니다: ' + id);
   applyMapData(r.data);
@@ -2434,10 +2436,11 @@ async function loadMapById(id) {
   initTrForMap();                 // 이 맵의 번역 캐시 로드(+구버전 이관·정리)
   // 이름은 맵 파일 안에서(없으면 루트 노드 텍스트, 그것도 없으면 id)
   currentMapName = r.data.name || deriveMapName(r.data) || id;
-  viewX = 0; viewY = 0; viewScale = 1; selectNone();
+  selectNone();
   mapDirty = false;
   currentMapUpdatedAt = (r.data && r.data.updatedAt) || '';
   render(); resetHistory();
+  if (!keepView) fitView();      // 맵을 열면 노드 전체가 화면에 꽉 차게 시작(F와 동일). 자동 갱신 땐 현재 화면 유지
   setCloudStatus('synced', currentMapName + t('st.syncedSuffix'));
   maybeTranslate();
 }
@@ -2459,7 +2462,7 @@ async function cloudSave() {
     if (e.conflict) {
       setCloudStatus('error', t('st.conflict'));
       if (confirm(t('cf.conflict'))) {
-        await loadMapById(currentMapId);
+        await loadMapById(currentMapId, true);
       }
     } else if (e.auth) {
       setCloudStatus('error', t('st.authFail'));
@@ -2546,7 +2549,7 @@ async function checkRemoteChanges() {
       showRemoteBanner();
     } else {
       // 미저장 변경이 없으면 조용히 최신본으로 갱신
-      await loadMapById(currentMapId);
+      await loadMapById(currentMapId, true);
       showToast(t('msg.remoteApplied'));
     }
   } catch (e) { /* 폴링 실패는 조용히 무시 */ }
@@ -2563,7 +2566,7 @@ function hideRemoteBanner() {
 function reloadRemoteChange() {
   if (mapDirty && !confirm(t('cf.reloadLose'))) return;
   hideRemoteBanner();
-  loadMapById(currentMapId).then(() => showToast(t('msg.latestLoaded'))).catch(e => handleCloudErr(e));
+  loadMapById(currentMapId, true).then(() => showToast(t('msg.latestLoaded'))).catch(e => handleCloudErr(e));
 }
 function startRemotePolling() {
   if (remotePollTimer) clearInterval(remotePollTimer);
