@@ -443,10 +443,6 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   <div class="menu-item" onclick="menuCanvasBg()">
     <span class="menu-icon">●</span> <span class="mtext" data-i18n="menu.canvasBg">배경 색상</span>
   </div>
-  <div class="menu-sep"></div>
-  <div class="menu-item" onclick="toggleResizeNodes()">
-    <span class="menu-icon">⤢</span> <span class="mtext" data-i18n="menu.resize">노드 크기 조정</span> <span class="menu-check" id="canvas-resize-check">☐</span>
-  </div>
 </div>
 
 <div id="line-menu">
@@ -1890,7 +1886,6 @@ function openCanvasMenuAt(cx, cy) {
   hideAll();
   if (connecting) { cancelConnecting(); render(); return; }
   canvasMenuWorld = s2w(cx, cy);
-  document.getElementById('canvas-resize-check').textContent = resizeNodes ? '☑' : '☐';
   placeMenuAt(document.getElementById('canvas-menu'), cx, cy);
 }
 
