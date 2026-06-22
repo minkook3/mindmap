@@ -5,10 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <title>MindMap</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Self-hosted fonts (no external CDN dependency) */
+@font-face { font-family: 'Gaegu'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/gaegu-400.woff2') format('woff2'); }
+@font-face { font-family: 'Gaegu'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/gaegu-700.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/nunito-400.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 500; font-display: swap; src: url('fonts/nunito-500.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 600; font-display: swap; src: url('fonts/nunito-600.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-style: normal; font-weight: 700; font-display: swap; src: url('fonts/nunito-700.woff2') format('woff2'); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; user-select: none; }
 
@@ -298,13 +302,13 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   margin-top: 20px; padding-top: 16px; border-top: 1px solid #1d2e49; text-align: center;
 }
 .set-brand {
-  font-family: 'Fredoka', 'ui-rounded', system-ui, sans-serif;
-  font-size: 22px; font-weight: 600; letter-spacing: 1.5px;
+  font-family: 'Gaegu', 'ui-rounded', system-ui, sans-serif;
+  font-size: 22px; font-weight: 700; letter-spacing: 1.5px;
   color: #6f7e98;
 }
 .set-brand .hmk-h { color: #ff5a36; }
 .set-copy-line {
-  font-family: 'Fredoka', 'ui-rounded', system-ui, sans-serif;
+  font-family: 'Nunito', 'ui-rounded', system-ui, sans-serif;
   margin-top: 5px; font-size: 11.5px; letter-spacing: 0.3px;
   color: #56657f; font-weight: 400;
 }
@@ -393,6 +397,16 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
   </div>
   <div class="menu-item" onclick="menuTextColor()">
     <span class="menu-icon">A</span> <span class="mtext" data-i18n="menu.textColor">텍스트 색상</span>
+  </div>
+  <div class="menu-item has-submenu" id="menu-font" onclick="toggleSubmenu(event, this)">
+    <span class="menu-icon">Ｆ</span> <span class="mtext" data-i18n="menu.font">폰트</span> <span class="submenu-arrow">›</span>
+    <div class="submenu" id="font-submenu">
+      <div class="menu-item" onclick="menuFont('')"><span class="menu-icon">↺</span> <span class="mtext" data-i18n="menu.fontDefault">기본</span></div>
+      <div class="menu-item" onclick="menuFont('gaegu')"><span class="menu-icon" style="font-family:'Gaegu',cursive">G</span> <span style="font-family:'Gaegu',cursive">Gaegu</span></div>
+      <div class="menu-item" onclick="menuFont('nunito')"><span class="menu-icon" style="font-family:'Nunito',sans-serif">N</span> <span style="font-family:'Nunito',sans-serif">Nunito</span></div>
+      <div class="menu-item" onclick="menuFont('serif')"><span class="menu-icon" style="font-family:Georgia,serif">S</span> <span style="font-family:Georgia,serif" data-i18n="menu.fontSerif">명조</span></div>
+      <div class="menu-item" onclick="menuFont('mono')"><span class="menu-icon" style="font-family:monospace">M</span> <span style="font-family:'Courier New',monospace" data-i18n="menu.fontMono">고정폭</span></div>
+    </div>
   </div>
   <div class="menu-item" id="menu-link-add" onclick="menuLinkAdd()">
     <span class="menu-icon">🌐</span> <span class="mtext" data-i18n="menu.linkAdd">링크 삽입</span>
@@ -766,6 +780,7 @@ Object.assign(I18N.ko, {
   'menu.addChild':'자식 노드 추가','menu.connect':'라인 연결','menu.editText':'텍스트 편집','menu.textColor':'텍스트 색상',
   'menu.shape':'노드 형태','menu.shapeRect':'네모','menu.shapeRound':'둥근 네모','menu.shapeCircle':'원형',
   'menu.nodeColor':'노드 색상','menu.resize':'노드 크기 조정','menu.delete':'삭제',
+  'menu.font':'폰트','menu.fontDefault':'기본','menu.fontSerif':'명조','menu.fontMono':'고정폭',
   'menu.selectNodes':'노드 선택','menu.selChildren':'자식 노드','menu.selAll':'모든 노드',
   'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.canvasBg':'배경 색상','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집',
   'menu.linkAdd':'링크 삽입','menu.linkEdit':'링크 편집'
@@ -775,6 +790,7 @@ Object.assign(I18N.en, {
   'menu.addChild':'Add child node','menu.connect':'Connect line','menu.editText':'Edit text','menu.textColor':'Text color',
   'menu.shape':'Node shape','menu.shapeRect':'Rectangle','menu.shapeRound':'Rounded','menu.shapeCircle':'Circle',
   'menu.nodeColor':'Node color','menu.resize':'Resize nodes','menu.delete':'Delete',
+  'menu.font':'Font','menu.fontDefault':'Default','menu.fontSerif':'Serif','menu.fontMono':'Monospace',
   'menu.selectNodes':'Select nodes','menu.selChildren':'Child nodes','menu.selAll':'All nodes',
   'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.canvasBg':'Background color','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines',
   'menu.linkAdd':'Insert link','menu.linkEdit':'Edit link'
@@ -784,6 +800,7 @@ Object.assign(I18N.ja, {
   'menu.addChild':'子ノードを追加','menu.connect':'ラインを接続','menu.editText':'テキスト編集','menu.textColor':'テキスト色',
   'menu.shape':'ノード形状','menu.shapeRect':'四角','menu.shapeRound':'角丸','menu.shapeCircle':'円形',
   'menu.nodeColor':'ノード色','menu.resize':'ノードサイズ変更','menu.delete':'削除',
+  'menu.font':'フォント','menu.fontDefault':'デフォルト','menu.fontSerif':'明朝','menu.fontMono':'等幅',
   'menu.selectNodes':'ノード選択','menu.selChildren':'子ノード','menu.selAll':'すべてのノード',
   'menu.createNode':'ノード作成','menu.rectSelect':'矩形選択','menu.canvasBg':'背景色','menu.straightLine':'直線ライン','menu.customLine':'カスタムライン','menu.editLines':'ライン編集',
   'menu.linkAdd':'リンク挿入','menu.linkEdit':'リンク編集'
@@ -1186,7 +1203,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function initDefault() {
-  nodes = [{ id: nid(), text: '중심 주제', x: 0, y: 0, color: '#e94560', parentId: null }];
+  nodes = [{ id: nid(), text: 'Hello', x: 0, y: 0, color: '#e94560', parentId: null }];
   links = [];
   bgColor = DEFAULT_BG; applyBg();
 }
@@ -1369,6 +1386,7 @@ function render() {
     text.setAttribute('fill', n.textColor || textColorFor(n.color));  // 지정 색 우선, 없으면 자동
     text.setAttribute('font-size', fs);
     text.setAttribute('font-weight', isRoot ? 'bold' : '500');
+    if (n.font && FONT_STACKS[n.font]) text.setAttribute('font-family', FONT_STACKS[n.font]);
     text.setAttribute('pointer-events', 'none');
     const nLines = geom.lines.length;
     const top = s.y - (nLines - 1) * geom.lineH / 2;   // 여러 줄 세로 중앙 정렬
@@ -1462,7 +1480,7 @@ function addResizeHandles(g, n, geom, s) {
 function nodeGeom(n) {
   const isRoot = !n.parentId;
   const fsBase = isRoot ? 15 : 13;
-  const charW = isRoot ? 8.5 : 7.5;
+  const charW = (isRoot ? 8.5 : 7.5) * (n.font && FONT_WIDTH[n.font] ? FONT_WIDTH[n.font] : 1);
   const lines = nodeText(n).split('\n');
   const longest = Math.max(1, ...lines.map(l => l.length));
   const lineHBase = fsBase + 6;
@@ -2393,6 +2411,32 @@ function targetNodes() {
   return n ? [n] : [];
 }
 
+// 노드별 글씨체. 키 → CSS font-family 스택. 외부 CDN 없이 self-host 폰트 + 시스템 기본 글꼴만 사용.
+const FONT_STACKS = {
+  '': '',                                          // 기본(상속)
+  'gaegu':  "'Gaegu', cursive",                    // 손글씨 (self-host)
+  'nunito': "'Nunito', 'Segoe UI', sans-serif",    // 둥근 산세리프 (self-host)
+  'serif':  "Georgia, 'Times New Roman', serif",   // 명조 (시스템)
+  'mono':   "'Courier New', monospace"             // 고정폭 (시스템)
+};
+// 폰트별 글자폭 보정(노드 박스가 글씨를 충분히 감싸도록)
+const FONT_WIDTH = { 'gaegu': 1.18, 'mono': 1.1 };
+
+// 노드 글씨체 변경(선택된 모든 노드에 적용)
+function menuFont(key) {
+  hideAll();
+  const targets = targetNodes();
+  if (!targets.length) return;
+  const v = key || '';
+  let changed = false;
+  targets.forEach(n => {
+    const cur = n.font || '';
+    if (cur !== v) { if (v) n.font = v; else delete n.font; changed = true; }
+  });
+  if (changed) recordHistory();
+  render();
+}
+
 // 노드 도형 변경(선택된 모든 노드에 적용)
 function menuShape(shape) {
   hideAll();
@@ -2475,6 +2519,7 @@ function startEdit(id) {
   const input = document.getElementById('edit-input');
   const s = w2s(n.x, n.y);
   input.value = nodeText(n);   // 현재 표시 중인 문구로 편집 시작
+  input.style.fontFamily = (n.font && FONT_STACKS[n.font]) ? FONT_STACKS[n.font] : '';  // 편집창도 노드 글씨체에 맞춤
   input.style.display = 'block';
   // 내용에 맞춰 textarea 크기/위치 자동 조정 후 노드 중앙에 배치
   const autosize = () => {
@@ -2775,7 +2820,7 @@ function genId() {
 
 async function createMap(name) {
   const id = genId();
-  const data = { nodes: [{ id: 'n1', text: name || '중심 주제', x: 0, y: 0, color: '#e94560', parentId: null }], links: [], idCounter: 2, name: name || '', updatedAt: new Date().toISOString() };
+  const data = { nodes: [{ id: 'n1', text: name || 'Hello', x: 0, y: 0, color: '#e94560', parentId: null }], links: [], idCounter: 2, name: name || '', updatedAt: new Date().toISOString() };
   const sha = await ghPutFile(mapPath(id), data, null, 'feat: create map "' + name + '"');
   return { id, sha };
 }
