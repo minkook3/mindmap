@@ -291,6 +291,20 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
 .field .hint-text a { color: #26c6da; }
 .contact-email { color: #26c6da; font-size: 13px; cursor: pointer; word-break: break-all; }
 .contact-email:hover { text-decoration: underline; }
+.set-copyright {
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid #1d2e49; text-align: center;
+}
+.set-brand {
+  font-family: 'ui-rounded', 'SF Pro Rounded', 'Apple SD Gothic Neo', 'Quicksand', 'Hiragino Maru Gothic ProN', system-ui, sans-serif;
+  font-size: 19px; font-weight: 700; letter-spacing: 2px;
+  color: #6f7e98; text-transform: uppercase;
+}
+.set-brand .hmk-h { color: #ff5a36; }
+.set-copy-line {
+  font-family: 'ui-rounded', 'SF Pro Rounded', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  margin-top: 6px; font-size: 11px; letter-spacing: 0.4px;
+  color: #56657f; font-weight: 400;
+}
 .modal .ok-btn { background: #e94560; border-color: #c73350; }
 .modal .ok-btn:hover { background: #c73350; }
 </style>
@@ -491,6 +505,10 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
       <div class="field" style="margin-top:6px">
         <label data-i18n="set.contact">문의</label>
         <div id="contact-email" class="contact-email" onclick="copyContactEmail()" title="클릭하면 복사"></div>
+      </div>
+      <div class="set-copyright">
+        <div class="set-brand"><span class="hmk-h">H</span>MK</div>
+        <div class="set-copy-line">© 2026 HMK Mindmap All Rights Reserved.</div>
       </div>
     </div>
     <div class="modal-foot">
@@ -3048,7 +3066,7 @@ function saveSettings() {
   applyEditPermission();   // 토큰을 넣었으면 편집 가능, 지웠으면 뷰어로 즉시 전환
 }
 // ── 문의 메일 (스팸봇 회피: 평문 미포함, 런타임 조립 + 클릭 복사) ──
-const CONTACT_PARTS = ['minkook', 'nhn.com'];
+const CONTACT_PARTS = ['niceminkook', 'gmail.com'];
 function contactEmail() { return CONTACT_PARTS[0] + '@' + CONTACT_PARTS[1]; }
 function fillContact() { const el = document.getElementById('contact-email'); if (el) el.textContent = contactEmail(); }
 function copyContactEmail() {
