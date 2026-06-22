@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "text": "test",
+      "x": 0,
+      "y": 0,
+      "color": "#e94560",
+      "parentId": null
+    }
+  ],
+  "links": [],
+  "idCounter": 2,
+  "name": "test",
+  "updatedAt": "2026-06-22T04:01:08.629Z"
+}
