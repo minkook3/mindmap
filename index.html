@@ -444,29 +444,17 @@ button:disabled { opacity: 0.35; cursor: default; background: #0f3460; }
     <span class="menu-icon">●</span> <span class="mtext" data-i18n="menu.canvasBg">배경 색상</span>
   </div>
   <div class="menu-sep"></div>
-  <div class="menu-item" onclick="menuAllLines('straight')">
-    <span class="menu-icon">─</span> <span class="mtext" data-i18n="menu.straightLine">직선 라인</span>
-  </div>
-  <div class="menu-item" onclick="menuAllLines('custom')">
-    <span class="menu-icon">∿</span> <span class="mtext" data-i18n="menu.customLine">커스텀 라인</span>
-  </div>
-  <div class="menu-item" onclick="toggleEditLines()">
-    <span class="menu-icon">✥</span> <span class="mtext" data-i18n="menu.editLines">라인 편집</span> <span class="menu-check" id="canvas-edit-lines-check">☐</span>
-  </div>
   <div class="menu-item" onclick="toggleResizeNodes()">
     <span class="menu-icon">⤢</span> <span class="mtext" data-i18n="menu.resize">노드 크기 조정</span> <span class="menu-check" id="canvas-resize-check">☐</span>
   </div>
 </div>
 
 <div id="line-menu">
-  <div class="menu-item" onclick="lineSetType('straight')">
+  <div class="menu-item" onclick="lineMakeStraight()">
     <span class="menu-icon">─</span> <span class="mtext" data-i18n="menu.straightLine">직선 라인</span>
   </div>
-  <div class="menu-item" onclick="lineSetType('custom')">
-    <span class="menu-icon">∿</span> <span class="mtext" data-i18n="menu.customLine">커스텀 라인</span>
-  </div>
-  <div class="menu-item" onclick="toggleEditLines()">
-    <span class="menu-icon">✥</span> <span class="mtext" data-i18n="menu.editLines">라인 편집</span> <span class="menu-check" id="edit-lines-check">☐</span>
+  <div class="menu-item" onclick="lineEditCustom()">
+    <span class="menu-icon">∿</span> <span class="mtext" data-i18n="menu.lineEditItem">커스텀 라인(편집)</span>
   </div>
 </div>
 
@@ -595,7 +583,8 @@ let connecting = false, connectFromId = null;  // 연결 모드 상태
 let mouseScreen = { x: 0, y: 0 };     // 현재 마우스 위치(client 좌표)
 let dragPivot = null;                 // 커스텀 라인 피봇 드래그: {owner, index}
 let canvasMenuWorld = null;           // 빈 화면 우클릭 위치(월드 좌표)
-let editLines = false;                 // 라인 편집 모드(피봇 표시) on/off
+let editingEdge = null;                // 라인 편집 모드: 현재 편집 중인 라인(owner). null이면 일반 모드
+const PIVOT_GRAB_TOL = 28;             // 피봇 근접 grab 허용 반경(px) — 근처만 눌러도 잡힘
 let contextEdge = null;                // 우클릭한 라인: {owner, aNode, bNode}
 let resizeNodes = false;               // 노드 크기 조정 모드(핸들 표시) on/off
 let dragResize = null;                 // 리사이즈 드래그: {id, hx, hy}
@@ -715,6 +704,7 @@ Object.assign(I18N.ko, {
   'msg.clickToConnect':'연결할 노드를 클릭하세요  (ESC: 취소)','msg.keyInUse':'이미 "{0}"에 사용 중인 키입니다','msg.keyChanged':'단축키가 변경되었습니다',
   'msg.customLineHint':'커스텀 라인 — "라인 편집"을 켜면 피봇을 드래그할 수 있습니다','msg.allCustom':'모든 라인을 커스텀으로 변경했습니다 — "라인 편집"을 켜면 피봇 조정 가능','msg.allStraight':'모든 라인을 직선으로 변경했습니다',
   'msg.editLinesOn':'라인 편집 ON — 커스텀 라인의 피봇을 드래그하세요','msg.editLinesOff':'라인 편집 OFF','msg.resizeOn':'노드 크기 조정 ON — 가장자리 핸들을 드래그하세요','msg.resizeOff':'노드 크기 조정 OFF',
+  'msg.lineEditOn':'라인 편집 — 피봇을 드래그하세요 (빈 곳 탭하면 종료)','msg.lineEditOff':'라인 편집 종료',
   'msg.needTokenSettings':'저장하려면 설정에서 GitHub 토큰을 입력하세요','msg.saved':'GitHub에 저장되었습니다','msg.authFail':'토큰이 없거나 권한이 부족합니다 ({0})','msg.saveFail':'저장 실패',
   'msg.renamed':'이름이 변경되었습니다','msg.duplicated':'복제되었습니다','msg.deleted':'삭제되었습니다','msg.authFailShort':'토큰이 없거나 권한이 부족합니다','msg.error':'오류가 발생했습니다',
   'msg.remoteApplied':'다른 사람의 변경이 반영되었습니다','msg.latestLoaded':'최신 버전을 불러왔습니다','msg.needToken2':'저장하려면 설정에서 토큰을 입력하세요','msg.savedAsNew':'새 맵으로 저장되었습니다','msg.mapCreated':'맵이 생성되었습니다',
@@ -737,6 +727,7 @@ Object.assign(I18N.en, {
   'msg.clickToConnect':'Click a node to connect (ESC: cancel)','msg.keyInUse':'Key already used by "{0}"','msg.keyChanged':'Shortcut changed',
   'msg.customLineHint':'Custom line — turn on "Edit lines" to drag pivots','msg.allCustom':'All lines changed to custom — turn on "Edit lines" to adjust pivots','msg.allStraight':'All lines changed to straight',
   'msg.editLinesOn':'Edit lines ON — drag the pivots of custom lines','msg.editLinesOff':'Edit lines OFF','msg.resizeOn':'Resize nodes ON — drag the edge handles','msg.resizeOff':'Resize nodes OFF',
+  'msg.lineEditOn':'Line edit — drag the pivots (tap empty space to finish)','msg.lineEditOff':'Line edit finished',
   'msg.needTokenSettings':'Enter a GitHub token in Settings to save','msg.saved':'Saved to GitHub','msg.authFail':'Missing token or insufficient permission ({0})','msg.saveFail':'Save failed',
   'msg.renamed':'Renamed','msg.duplicated':'Duplicated','msg.deleted':'Deleted','msg.authFailShort':'Missing token or insufficient permission','msg.error':'An error occurred',
   'msg.remoteApplied':'Someone else’s changes were applied','msg.latestLoaded':'Loaded the latest version','msg.needToken2':'Enter a token in Settings to save','msg.savedAsNew':'Saved as a new map','msg.mapCreated':'Map created',
@@ -759,6 +750,7 @@ Object.assign(I18N.ja, {
   'msg.clickToConnect':'接続するノードをクリック (ESC: キャンセル)','msg.keyInUse':'すでに "{0}" で使用中のキーです','msg.keyChanged':'ショートカットを変更しました',
   'msg.customLineHint':'カスタムライン — "ライン編集"をオンにするとピボットをドラッグできます','msg.allCustom':'すべてのラインをカスタムに変更しました — "ライン編集"でピボット調整可','msg.allStraight':'すべてのラインを直線に変更しました',
   'msg.editLinesOn':'ライン編集 ON — カスタムラインのピボットをドラッグ','msg.editLinesOff':'ライン編集 OFF','msg.resizeOn':'ノードサイズ変更 ON — 端のハンドルをドラッグ','msg.resizeOff':'ノードサイズ変更 OFF',
+  'msg.lineEditOn':'ライン編集 — ピボットをドラッグ（空白をタップで終了）','msg.lineEditOff':'ライン編集を終了',
   'msg.needTokenSettings':'保存するには設定でGitHubトークンを入力してください','msg.saved':'GitHubに保存しました','msg.authFail':'トークンがないか権限が不足しています ({0})','msg.saveFail':'保存に失敗しました',
   'msg.renamed':'名前を変更しました','msg.duplicated':'複製しました','msg.deleted':'削除しました','msg.authFailShort':'トークンがないか権限が不足しています','msg.error':'エラーが発生しました',
   'msg.remoteApplied':'他の人の変更が反映されました','msg.latestLoaded':'最新バージョンを読み込みました','msg.needToken2':'保存するには設定でトークンを入力してください','msg.savedAsNew':'新しいマップとして保存しました','msg.mapCreated':'マップを作成しました',
@@ -783,7 +775,7 @@ Object.assign(I18N.ko, {
   'menu.nodeColor':'노드 색상','menu.resize':'노드 크기 조정','menu.delete':'삭제',
   'menu.font':'폰트','menu.fontDefault':'기본','menu.fontSerif':'명조','menu.fontMono':'고정폭',
   'menu.selectNodes':'노드 선택','menu.selChildren':'자식 노드','menu.selAll':'모든 노드',
-  'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.canvasBg':'배경 색상','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.editLines':'라인 편집',
+  'menu.createNode':'노드 생성','menu.rectSelect':'사각 선택','menu.canvasBg':'배경 색상','menu.straightLine':'직선 라인','menu.customLine':'커스텀 라인','menu.lineEditItem':'커스텀 라인(편집)','menu.editLines':'라인 편집',
   'menu.linkAdd':'링크 삽입','menu.linkEdit':'링크 편집'
 });
 Object.assign(I18N.en, {
@@ -793,7 +785,7 @@ Object.assign(I18N.en, {
   'menu.nodeColor':'Node color','menu.resize':'Resize nodes','menu.delete':'Delete',
   'menu.font':'Font','menu.fontDefault':'Default','menu.fontSerif':'Serif','menu.fontMono':'Monospace',
   'menu.selectNodes':'Select nodes','menu.selChildren':'Child nodes','menu.selAll':'All nodes',
-  'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.canvasBg':'Background color','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.editLines':'Edit lines',
+  'menu.createNode':'Create node','menu.rectSelect':'Box select','menu.canvasBg':'Background color','menu.straightLine':'Straight line','menu.customLine':'Custom line','menu.lineEditItem':'Custom line (edit)','menu.editLines':'Edit lines',
   'menu.linkAdd':'Insert link','menu.linkEdit':'Edit link'
 });
 Object.assign(I18N.ja, {
@@ -803,7 +795,7 @@ Object.assign(I18N.ja, {
   'menu.nodeColor':'ノード色','menu.resize':'ノードサイズ変更','menu.delete':'削除',
   'menu.font':'フォント','menu.fontDefault':'デフォルト','menu.fontSerif':'明朝','menu.fontMono':'等幅',
   'menu.selectNodes':'ノード選択','menu.selChildren':'子ノード','menu.selAll':'すべてのノード',
-  'menu.createNode':'ノード作成','menu.rectSelect':'矩形選択','menu.canvasBg':'背景色','menu.straightLine':'直線ライン','menu.customLine':'カスタムライン','menu.editLines':'ライン編集',
+  'menu.createNode':'ノード作成','menu.rectSelect':'矩形選択','menu.canvasBg':'背景色','menu.straightLine':'直線ライン','menu.customLine':'カスタムライン','menu.lineEditItem':'カスタムライン(編集)','menu.editLines':'ライン編集',
   'menu.linkAdd':'リンク挿入','menu.linkEdit':'リンク編集'
 });
 function getLang() { const l = localStorage.getItem('mm_lang'); return (l === 'en' || l === 'ko' || l === 'ja') ? l : 'ko'; }
@@ -1207,6 +1199,7 @@ function initDefault() {
   nodes = [{ id: nid(), text: 'Hello', x: 0, y: 0, color: '#e94560', parentId: null }];
   links = [];
   bgColor = DEFAULT_BG; applyBg();
+  editingEdge = null;
 }
 
 function nid() { return 'n' + (idCounter++); }
@@ -1405,12 +1398,13 @@ function render() {
     // 링크가 있으면 우측 상단에 빨간 점(탭/클릭 → 새 창으로 열기) — 뷰어 모드에서도 동작
     if (n.link) addLinkDot(g, n, geom, s);
 
-    // 노드 크기 조정 모드: 가장자리 리사이즈 핸들
-    if (!isReadOnly && resizeNodes) addResizeHandles(g, n, geom, s);
+    // 노드 크기 조정 모드: 가장자리 리사이즈 핸들 (라인 편집 모드에선 비활성)
+    if (!isReadOnly && !editingEdge && resizeNodes) addResizeHandles(g, n, geom, s);
 
     svg.appendChild(g);
 
-    if (!isReadOnly) {
+    // 라인 편집 모드 중엔 노드 조작 차단(오조작 방지) — 핸들러 미부착
+    if (!isReadOnly && !editingEdge) {
       g.addEventListener('pointerdown', e => onNodePointerDown(e, n.id));
       g.addEventListener('contextmenu', e => { e.preventDefault(); if (lastPointerTouch) return; onNodeRightClick(e, n.id); });
     }
@@ -1608,8 +1602,8 @@ function makeEdge(svg, sNode, eNode, color, opts) {
   });
   svg.appendChild(hit);
 
-  // 커스텀 라인의 피봇 — 라인 편집 모드일 때만 표시
-  if (isCustom && editLines) {
+  // 커스텀 라인의 피봇 — 편집 중인 그 라인에만 표시
+  if (isCustom && owner === editingEdge) {
     [[start, c1], [end, c2]].forEach(([a, b]) => {       // 끝점 → 제어점 가이드선
       const gl = document.createElementNS(NS, 'line');
       gl.setAttribute('x1', a.x); gl.setAttribute('y1', a.y);
@@ -1622,12 +1616,12 @@ function makeEdge(svg, sNode, eNode, color, opts) {
     [c1, c2].forEach((pt, idx) => {                      // 드래그 가능한 피봇
       const circ = document.createElementNS(NS, 'circle');
       circ.setAttribute('cx', pt.x); circ.setAttribute('cy', pt.y);
-      circ.setAttribute('r', 7);
+      circ.setAttribute('r', 10);
       circ.setAttribute('fill', '#16213e');
-      circ.setAttribute('stroke', '#26c6da'); circ.setAttribute('stroke-width', 2.5);
+      circ.setAttribute('stroke', '#26c6da'); circ.setAttribute('stroke-width', 3);
       circ.style.cursor = 'grab';
-      circ.addEventListener('mouseenter', () => { circ.setAttribute('r', 9); circ.setAttribute('fill', '#0f3460'); });
-      circ.addEventListener('mouseleave', () => { circ.setAttribute('r', 7); circ.setAttribute('fill', '#16213e'); });
+      circ.addEventListener('mouseenter', () => { circ.setAttribute('r', 12); circ.setAttribute('fill', '#0f3460'); });
+      circ.addEventListener('mouseleave', () => { circ.setAttribute('r', 10); circ.setAttribute('fill', '#16213e'); });
       circ.addEventListener('pointerdown', e => {
         if (e.button === 2) return;
         e.stopPropagation();
@@ -1832,6 +1826,7 @@ function setupEvents() {
       ['dashboard-overlay','settings-overlay','prompt-overlay'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'none';
       });
+      if (editingEdge) { editingEdge = null; showToast(t('msg.lineEditOff')); render(); }   // 라인 편집 종료
       if (connecting) { cancelConnecting(); render(); }
       return;
     }
@@ -1877,11 +1872,10 @@ function setupEvents() {
 
 // 빈 캔버스 메뉴 열기(우클릭 / 터치 롱프레스 공용)
 function openCanvasMenuAt(cx, cy) {
-  if (isReadOnly) return;          // 읽기전용/발표 모드: 빈 화면 메뉴 차단
+  if (isReadOnly || editingEdge) return;   // 읽기전용/발표/라인편집 모드: 빈 화면 메뉴 차단
   hideAll();
   if (connecting) { cancelConnecting(); render(); return; }
   canvasMenuWorld = s2w(cx, cy);
-  document.getElementById('canvas-edit-lines-check').textContent = editLines ? '☑' : '☐';
   document.getElementById('canvas-resize-check').textContent = resizeNodes ? '☑' : '☐';
   placeMenuAt(document.getElementById('canvas-menu'), cx, cy);
 }
@@ -2027,6 +2021,23 @@ function onSvgPointerDown(e) {
   try { svg.setPointerCapture(e.pointerId); } catch (_) {}
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 2) { beginPinch(); return; }
+  // ── 라인 편집 모드 ── 피봇 근접 grab / 빈 곳 드래그=팬 / 빈 곳 탭=편집 종료 (노드 등 다른 조작 차단)
+  if (editingEdge && editingEdge.ctrl && !isReadOnly) {
+    hideAll();
+    gStart = { x: e.clientX, y: e.clientY }; gMoved = false;
+    let best = -1, bestD = PIVOT_GRAB_TOL;
+    editingEdge.ctrl.forEach((cp, i) => {
+      const sc = w2s(cp.x, cp.y);
+      const d = Math.hypot(e.clientX - sc.x, e.clientY - sc.y);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best >= 0) { gKind = 'pivot'; dragPivot = { owner: editingEdge, index: best }; return; }   // 근처만 눌러도 잡힘
+    gKind = 'lineedit';                         // 피봇 아님 → 끌면 팬, 탭하면 편집 종료
+    if (!connecting && (e.button === 0 || e.button === 1)) {
+      isPanning = true; panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
+    }
+    return;
+  }
   if (marqueeArmed) { startMarquee(e); return; }    // '사각 선택' 무장 시 다음 드래그로 박스 선택
   isDragging = false; dragNodeId = null;      // 잔류 드래그 제거
   const ei = document.getElementById('edit-input');   // 편집 중 빈 배경 터치 → 편집 완료(blur=commit)
@@ -2169,6 +2180,9 @@ function finishGesture(e) {
     if (isDragging && gMoved) recordHistory();
     if (!gMoved && !lpFired) {                // 탭(이동·롱프레스 없음)
       if (connecting) { cancelConnecting(); }
+      else if (gKind === 'lineedit') {        // 라인 편집 모드에서 빈 곳 탭 → 편집 종료
+        editingEdge = null; showToast(t('msg.lineEditOff'));
+      }
       else if (gKind === 'edge') {            // 라인 탭/클릭 → 삭제
         if (currentEdge && currentEdge.onDelete) currentEdge.onDelete();
       }
@@ -2349,51 +2363,44 @@ function menuConnect() { hideAll(); if (contextNodeId) startConnecting(contextNo
 function setEdgeLineType(owner, aNode, bNode, type) {
   owner.lineType = type;
   if (type === 'custom') {
-    owner.ctrl = [                              // 직선을 3등분한 1/3, 2/3 지점
-      { x: aNode.x + (bNode.x - aNode.x) / 3, y: aNode.y + (bNode.y - aNode.y) / 3 },
-      { x: aNode.x + (bNode.x - aNode.x) * 2 / 3, y: aNode.y + (bNode.y - aNode.y) * 2 / 3 }
-    ];
+    if (!owner.ctrl || owner.ctrl.length !== 2) {   // 이미 커스텀이면 기존 피봇 유지
+      owner.ctrl = [                                  // 직선을 3등분한 1/3, 2/3 지점
+        { x: aNode.x + (bNode.x - aNode.x) / 3, y: aNode.y + (bNode.y - aNode.y) / 3 },
+        { x: aNode.x + (bNode.x - aNode.x) * 2 / 3, y: aNode.y + (bNode.y - aNode.y) * 2 / 3 }
+      ];
+    }
   } else {
     delete owner.ctrl;
   }
 }
 
-// 라인 형태 변경: 이 노드에 연결된 모든 라인에 적용
-// 라인 우클릭 메뉴 표시 (해당 라인만 기억)
+// 라인 우클릭(데스크톱)·길게누르기(모바일) 메뉴 — 그 라인만 기억
 function showLineMenu(e, owner, aNode, bNode) {
   hideAll();
   if (connecting) { cancelConnecting(); render(); }
   contextEdge = { owner, aNode, bNode };
-  document.getElementById('edit-lines-check').textContent = editLines ? '☑' : '☐';
   placeMenuAt(document.getElementById('line-menu'), e.clientX, e.clientY);
 }
 
-// 우클릭한 그 라인에만 형태 적용
-function lineSetType(type) {
+// 그 라인을 직선으로(편집 중이었으면 편집 종료)
+function lineMakeStraight() {
   hideAll();
   if (!contextEdge) return;
-  setEdgeLineType(contextEdge.owner, contextEdge.aNode, contextEdge.bNode, type);
-  if (type === 'custom') showToast(t('msg.customLineHint'));
+  setEdgeLineType(contextEdge.owner, contextEdge.aNode, contextEdge.bNode, 'straight');
+  if (editingEdge === contextEdge.owner) editingEdge = null;
   recordHistory();
   render();
 }
-// 빈 화면 메뉴: 모든 라인(트리+수동)에 형태 일괄 적용
-function setAllLinesType(type) {
-  nodes.forEach(n => { if (n.parentId) { const p = getNode(n.parentId); if (p) setEdgeLineType(n, p, n, type); } });
-  links.forEach(l => { const a = getNode(l.from), b = getNode(l.to); if (a && b) setEdgeLineType(l, a, b, type); });
-  recordHistory(); render();
-}
-function menuAllLines(type) {
+// 그 라인을 커스텀으로 만들고 "그 라인만" 편집 모드 진입
+function lineEditCustom() {
   hideAll();
-  setAllLinesType(type);
-  showToast(type === 'custom' ? t('msg.allCustom') : t('msg.allStraight'));
-}
-
-// 라인 편집 모드(피봇 표시) 토글
-function toggleEditLines() {
-  editLines = !editLines;
-  hideAll();
-  showToast(editLines ? t('msg.editLinesOn') : t('msg.editLinesOff'));
+  if (!contextEdge) return;
+  const o = contextEdge.owner;
+  const wasCustom = (o.lineType === 'custom' && o.ctrl && o.ctrl.length === 2);
+  setEdgeLineType(o, contextEdge.aNode, contextEdge.bNode, 'custom');   // 기존 커스텀이면 피봇 보존
+  editingEdge = o;
+  if (!wasCustom) recordHistory();
+  showToast(t('msg.lineEditOn'));
   render();
 }
 
@@ -3174,6 +3181,7 @@ function applyMapData(data) {
   links = data.links || [];
   idCounter = data.idCounter || 100;
   bgColor = data.bg || DEFAULT_BG; applyBg();   // 맵에 저장된 배경색 복원(없으면 기본)
+  editingEdge = null;                            // 맵 전환 시 라인 편집 모드 해제
 }
 
 function saveToLocal() {
