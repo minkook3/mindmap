@@ -2195,6 +2195,7 @@ function finishGesture(e) {
   isDragging = false; dragNodeId = null; isPanning = false;
   armed = false; armDragStarted = false; nodeArmId = null; currentEdge = null;
   gMoved = false; gStart = null; gKind = null;
+  lpFired = false;                         // 다음 제스처로 롱프레스 상태가 새지 않도록 초기화
   render();
 }
 
@@ -2222,7 +2223,7 @@ function onPointerCancel(e) {
   if (dragPivot) { recordHistory(); dragPivot = null; }
   isDragging = false; dragNodeId = null; isPanning = false; isMarquee = false;
   document.getElementById('marquee').style.display = 'none';
-  gMoved = false; gStart = null; gKind = null;
+  gMoved = false; gStart = null; gKind = null; lpFired = false;
   render();
 }
 
