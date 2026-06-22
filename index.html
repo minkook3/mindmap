@@ -1883,13 +1883,7 @@ function openCanvasMenuAt(cx, cy) {
   canvasMenuWorld = s2w(cx, cy);
   document.getElementById('canvas-edit-lines-check').textContent = editLines ? '☑' : '☐';
   document.getElementById('canvas-resize-check').textContent = resizeNodes ? '☑' : '☐';
-  const m = document.getElementById('canvas-menu');
-  const mw = 190, mh = 310;
-  let x = cx, y = cy;
-  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
-  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
-  m.style.left = x + 'px'; m.style.top = y + 'px';
-  m.style.display = 'block';
+  placeMenuAt(document.getElementById('canvas-menu'), cx, cy);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1911,6 +1905,7 @@ const MOVE_TOL = 8;                    // 이동 확정 임계값(px)
 // 모바일 노드 제스처: 바로 끌면 화면이동, 0.5초 잡으면 무장(끌면 노드이동), 계속 잡으면 메뉴 자동표시
 let armTimer = null, menuTimer = null, armed = false, armDragStarted = false, nodeArmId = null;
 const NODE_HOLD_MS = 500, NODE_MENU_MS = 300, NODE_DRAG_TOL = 14;  // 무장 0.5s, 메뉴 자동 +0.3s, 드래그 임계 14px
+const HOLD_TOL = 18;             // 무장(롱프레스) 대기 중 허용 드리프트 — 이하 흔들림은 무시(메뉴 안정)
 let currentEdge = null;                // 라인(에지) 위에서 시작한 제스처 정보
 let marqueeArmed = false;              // 메뉴 '사각 선택' → 다음 드래그 한 번만 박스 선택(주로 모바일)
 
@@ -2008,9 +2003,10 @@ function onNodePointerDown(e, id) {
   panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
   nodeArmId = id; armed = false; armDragStarted = false;
   clearArm();
-  armTimer = setTimeout(() => {                // 0.5초 가만히 잡으면 무장(끌면 노드이동 / 안 끌고 떼면 메뉴)
+  armTimer = setTimeout(() => {                // 0.5초 잡으면 무장(끌면 노드이동 / 안 끌고 떼면 메뉴). 큰 이동 시엔 onPointerMove가 미리 취소
     armTimer = null;
-    if (gMoved) return;                        // 그 사이 움직였으면(=팬) 무장 안 함
+    const cur = [...ptrs.values()][0] || gStart;
+    gStart = { x: cur.x, y: cur.y };           // 무장 시점 위치 기준으로 재설정 → 누르는 동안의 드리프트는 드래그로 안 침
     isPanning = false;
     isDragging = true; dragNodeId = id;
     const w = s2w(gStart.x, gStart.y);
@@ -2061,12 +2057,13 @@ function onSvgPointerDown(e) {
     panStart = { x: e.clientX - viewX * viewScale, y: e.clientY - viewY * viewScale };
   }
   // 터치로 빈 곳: 0.5초 잡으면 무장(진동) → 끌면 사각 선택 / 안 끌고 떼면 캔버스 메뉴
-  if (!isMouse && onEmpty && !isReadOnly) {
+  if (!isMouse && onEmpty && !isReadOnly && !connecting) {
     armed = false; armDragStarted = false; nodeArmId = null;
     clearArm();
     armTimer = setTimeout(() => {
       armTimer = null;
-      if (gMoved) return;            // 무장 전 움직였으면(=팬) 무장 안 함
+      const cur = [...ptrs.values()][0] || gStart;
+      gStart = { x: cur.x, y: cur.y };   // 무장 시점 위치 기준
       isPanning = false;
       armed = true;                  // 빈 배경 무장(gKind === 'empty') — 끌면 마키, 떼면 메뉴
       if (navigator.vibrate) navigator.vibrate(25);
@@ -2078,15 +2075,18 @@ function onPointerMove(e) {
   if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   mouseScreen = { x: e.clientX, y: e.clientY };
   if (pinch && ptrs.size >= 2) { updatePinch(); return; }
-  if (gStart && !gMoved && (Math.abs(e.clientX - gStart.x) > MOVE_TOL || Math.abs(e.clientY - gStart.y) > MOVE_TOL)) {
-    gMoved = true; clearLP();               // 8px 넘으면 이동 확정 → 롱프레스 취소
-    if (armTimer && !armed) { clearArm(); }  // 무장 전 이동 = 화면 팬 확정(노드 드래그 무장 취소)
+  const adx = gStart ? Math.abs(e.clientX - gStart.x) : 0, ady = gStart ? Math.abs(e.clientY - gStart.y) : 0;
+  if (gStart && !gMoved && (adx > MOVE_TOL || ady > MOVE_TOL)) { gMoved = true; clearLP(); }
+  // 무장(롱프레스) 대기 중: HOLD_TOL 넘기 전 작은 드리프트는 무시 → 팬도 무장취소도 안 함(메뉴 안정).
+  //  HOLD_TOL 넘으면 명확한 팬으로 보고 무장 취소하고 아래 팬 처리로 진행.
+  if (armTimer && !armed && !connecting) {
+    if (adx > HOLD_TOL || ady > HOLD_TOL) { clearArm(); }
+    else return;
   }
-  // 무장된 노드: 손떨림(작은 이동)은 무시하고 14px 넘게 움직여야 실제 드래그로 판정(나머지는 메뉴)
-  if (armed && !armDragStarted && gStart &&
-      (Math.abs(e.clientX - gStart.x) > NODE_DRAG_TOL || Math.abs(e.clientY - gStart.y) > NODE_DRAG_TOL)) {
+  // 무장된 노드/빈배경: (무장 시점부터) NODE_DRAG_TOL 넘게 움직여야 실제 드래그/마키로 판정(작은 떨림은 메뉴 보존)
+  if (armed && !armDragStarted && gStart && (adx > NODE_DRAG_TOL || ady > NODE_DRAG_TOL)) {
     armDragStarted = true;
-    if (menuTimer) { clearTimeout(menuTimer); menuTimer = null; }   // 드래그 시작 → 메뉴 자동표시 취소
+    if (menuTimer) { clearTimeout(menuTimer); menuTimer = null; }
     if (gKind === 'empty') {        // 빈 배경 무장 드래그 → 사각(마키) 선택 시작
       isPanning = false;
       marqueeBase = new Set(selectedIds);
@@ -2221,6 +2221,19 @@ function setupTouch() {
   svg.addEventListener('pointercancel', onPointerCancel);
 }
 
+// 메뉴를 화면 안에 들어오도록 — 실제 렌더 크기를 측정해 배치(모바일은 항목이 커서 높이가 다름)
+function placeMenuAt(menu, cx, cy) {
+  menu.style.left = '-9999px'; menu.style.top = '0';
+  menu.style.display = 'block';                 // 먼저 표시해야 offset 크기 측정 가능(화면 밖에서)
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = cx, y = cy;
+  if (x + mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
+  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+  x = Math.max(8, x); y = Math.max(8, y);
+  menu.style.left = x + 'px'; menu.style.top = y + 'px';
+  return { x, y, mw, mh };
+}
+
 // ── CONTEXT MENU ──
 function onNodeRightClick(e, id) {
   e.preventDefault(); e.stopPropagation();
@@ -2241,18 +2254,11 @@ function onNodeRightClick(e, id) {
   document.getElementById('menu-select').classList.remove('open');
 
   const menu = document.getElementById('context-menu');
-  // Keep menu inside viewport
-  const mw = 190, mh = 410;
-  let x = e.clientX, y = e.clientY;
-  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
-  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
+  const placed = placeMenuAt(menu, e.clientX, e.clientY);   // 실제 크기 기준 화면 안 배치
   // 오른쪽 공간이 부족하면 형태 서브메뉴를 왼쪽으로 펼침
-  const flipLeft = x + mw + 150 > window.innerWidth;
+  const flipLeft = placed.x + placed.mw + 150 > window.innerWidth;
   document.getElementById('menu-shape').classList.toggle('submenu-left', flipLeft);
   document.getElementById('menu-select').classList.toggle('submenu-left', flipLeft);
-  menu.style.display = 'block';
   render();
 }
 
@@ -2359,13 +2365,7 @@ function showLineMenu(e, owner, aNode, bNode) {
   if (connecting) { cancelConnecting(); render(); }
   contextEdge = { owner, aNode, bNode };
   document.getElementById('edit-lines-check').textContent = editLines ? '☑' : '☐';
-  const m = document.getElementById('line-menu');
-  const mw = 170, mh = 130;
-  let x = e.clientX, y = e.clientY;
-  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
-  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
-  m.style.left = x + 'px'; m.style.top = y + 'px';
-  m.style.display = 'block';
+  placeMenuAt(document.getElementById('line-menu'), e.clientX, e.clientY);
 }
 
 // 우클릭한 그 라인에만 형태 적용
