@@ -1398,8 +1398,8 @@ function render() {
     // 링크가 있으면 우측 상단에 빨간 점(탭/클릭 → 새 창으로 열기) — 뷰어 모드에서도 동작
     if (n.link) addLinkDot(g, n, geom, s);
 
-    // 노드 크기 조정 모드: 가장자리 리사이즈 핸들 (라인 편집 모드에선 비활성)
-    if (!isReadOnly && !editingEdge && resizeNodes) addResizeHandles(g, n, geom, s);
+    // 노드 크기 조정 모드: 가장자리 리사이즈 핸들 — 선택된 노드에만 표시(라인 편집 모드에선 비활성)
+    if (!isReadOnly && !editingEdge && resizeNodes && isSel) addResizeHandles(g, n, geom, s);
 
     svg.appendChild(g);
 
@@ -1446,19 +1446,15 @@ function addLinkDot(g, n, geom, s) {
 
 // 노드 가장자리 리사이즈 핸들(8방향) — 크기 조정 모드에서만
 function addResizeHandles(g, n, geom, s) {
-  const hw = geom.hw, hh = geom.hh, hs = 8;
+  const coarse = matchMedia('(pointer: coarse)').matches;   // 터치 기기 여부
+  const hw = geom.hw, hh = geom.hh;
+  const hs = coarse ? 12 : 9;        // 보이는 핸들 크기(터치에서 조금 더 크게)
+  const hit = coarse ? 44 : 18;      // 잡기용 투명 히트 영역(터치에서 매우 관대하게)
   const dirs = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
   dirs.forEach(([hx, hy]) => {
-    const r = document.createElementNS(NS, 'rect');
-    r.setAttribute('x', s.x + hx * hw - hs / 2);
-    r.setAttribute('y', s.y + hy * hh - hs / 2);
-    r.setAttribute('width', hs); r.setAttribute('height', hs);
-    r.setAttribute('rx', 2);
-    r.setAttribute('fill', '#16213e');
-    r.setAttribute('stroke', '#ffd166'); r.setAttribute('stroke-width', 2);
+    const cx = s.x + hx * hw, cy = s.y + hy * hh;
     let cur = (hx && hy) ? (hx === hy ? 'nwse-resize' : 'nesw-resize') : (hx ? 'ew-resize' : 'ns-resize');
-    r.style.cursor = cur;
-    r.addEventListener('pointerdown', e => {
+    const grab = e => {
       if (e.button === 2) return;
       e.stopPropagation();
       lastPointerTouch = (e.pointerType === 'touch');
@@ -1466,7 +1462,24 @@ function addResizeHandles(g, n, geom, s) {
       try { sv.setPointerCapture(e.pointerId); } catch (_) {}
       ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
       dragResize = { id: n.id, hx, hy };
-    });
+    };
+    // 투명한 넓은 히트 영역(터치 오조작 방지) — 먼저 그려 아래에 깔고 손가락 탭을 관대하게 받음
+    const hr = document.createElementNS(NS, 'rect');
+    hr.setAttribute('x', cx - hit / 2); hr.setAttribute('y', cy - hit / 2);
+    hr.setAttribute('width', hit); hr.setAttribute('height', hit);
+    hr.setAttribute('fill', 'transparent');
+    hr.style.cursor = cur;
+    hr.addEventListener('pointerdown', grab);
+    g.appendChild(hr);
+    // 보이는 핸들
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', cx - hs / 2); r.setAttribute('y', cy - hs / 2);
+    r.setAttribute('width', hs); r.setAttribute('height', hs);
+    r.setAttribute('rx', 2);
+    r.setAttribute('fill', '#16213e');
+    r.setAttribute('stroke', '#ffd166'); r.setAttribute('stroke-width', 2);
+    r.style.cursor = cur;
+    r.addEventListener('pointerdown', grab);
     g.appendChild(r);
   });
 }
@@ -1827,6 +1840,7 @@ function setupEvents() {
         const el = document.getElementById(id); if (el) el.style.display = 'none';
       });
       if (editingEdge) { editingEdge = null; showToast(t('msg.lineEditOff')); render(); }   // 라인 편집 종료
+      if (resizeNodes) { resizeNodes = false; showToast(t('msg.resizeOff')); render(); }   // 노드 크기 조정 종료(라인 편집과 동일)
       if (connecting) { cancelConnecting(); render(); }
       return;
     }
@@ -2187,7 +2201,8 @@ function finishGesture(e) {
         if (currentEdge && currentEdge.onDelete) currentEdge.onDelete();
       }
       else if (gKind === 'empty') {
-        if (!emptyDoubleFit(e.clientX, e.clientY)) { hideAll(); selectNone(); }
+        if (resizeNodes) { resizeNodes = false; showToast(t('msg.resizeOff')); }   // 빈 곳 탭 → 크기조정 종료(라인 편집과 동일한 조작)
+        else if (!emptyDoubleFit(e.clientX, e.clientY)) { hideAll(); selectNone(); }
       }
     }
   }
