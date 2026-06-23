@@ -2256,6 +2256,14 @@ function placeMenuAt(menu, cx, cy) {
   if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
   x = Math.max(8, x); y = Math.max(8, y);
   menu.style.left = x + 'px'; menu.style.top = y + 'px';
+  // 터치로 연 직후엔 손 떼는 합성 클릭이 손가락 아래 항목을 누르지 않도록 잠깐 입력 차단
+  if (lastPointerTouch) {
+    menu.style.pointerEvents = 'none';
+    clearTimeout(menu._peTimer);
+    menu._peTimer = setTimeout(() => { menu.style.pointerEvents = ''; }, 320);
+  } else {
+    menu.style.pointerEvents = '';
+  }
   return { x, y, mw, mh };
 }
 
@@ -2277,13 +2285,15 @@ function onNodeRightClick(e, id) {
   document.getElementById('resize-nodes-check').textContent = resizeNodes ? '☑' : '☐';
   document.getElementById('menu-shape').classList.remove('open');  // 서브메뉴 초기 닫힘
   document.getElementById('menu-select').classList.remove('open');
+  document.getElementById('menu-font').classList.remove('open');
 
   const menu = document.getElementById('context-menu');
   const placed = placeMenuAt(menu, e.clientX, e.clientY);   // 실제 크기 기준 화면 안 배치
-  // 오른쪽 공간이 부족하면 형태 서브메뉴를 왼쪽으로 펼침
+  // 오른쪽 공간이 부족하면 모든 서브메뉴를 왼쪽으로 펼침
   const flipLeft = placed.x + placed.mw + 150 > window.innerWidth;
   document.getElementById('menu-shape').classList.toggle('submenu-left', flipLeft);
   document.getElementById('menu-select').classList.toggle('submenu-left', flipLeft);
+  document.getElementById('menu-font').classList.toggle('submenu-left', flipLeft);
   render();
 }
 
@@ -2291,7 +2301,11 @@ function onNodeRightClick(e, id) {
 function toggleSubmenu(e, el) {
   if (e.target.closest('.submenu')) return;   // 하위 항목 클릭은 각자 처리
   e.stopPropagation();
-  el.classList.toggle('open');
+  const willOpen = !el.classList.contains('open');
+  // 같은 메뉴 안의 다른 서브메뉴는 모두 닫는다 → 한 번에 하나만 열림
+  const root = el.closest('#context-menu, #canvas-menu, #line-menu');
+  if (root) root.querySelectorAll('.has-submenu.open').forEach(o => { if (o !== el) o.classList.remove('open'); });
+  el.classList.toggle('open', willOpen);
 }
 
 function hideAll() {
