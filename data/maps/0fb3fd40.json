@@ -1,0 +1,26 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "text": "Hello",
+      "x": 0,
+      "y": 0,
+      "color": "#e94560",
+      "parentId": null
+    },
+    {
+      "id": "n2",
+      "text": "이지형",
+      "x": -170.66666666666666,
+      "y": -76.33333333333333,
+      "color": "#000000",
+      "parentId": null,
+      "shape": "rect"
+    }
+  ],
+  "links": [],
+  "idCounter": 3,
+  "bg": "#1a1a2e",
+  "name": "이지형마인드맵",
+  "updatedAt": "2026-06-23T09:16:54.606Z"
+}
