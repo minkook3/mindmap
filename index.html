@@ -1481,16 +1481,28 @@ function addResizeHandles(g, n, geom, s) {
 }
 
 // 노드의 도형/크기 계산(화면 px) — render()와 라인 경계가 공유
+// 전각(한글·한자·가나 등) 글자 판별 — 라틴보다 글자폭이 훨씬 넓음
+function isWideChar(ch) {
+  return /[ᄀ-ᇿ⺀-꓏ꥠ-꥿가-퟿豈-﫿︰-﹏＀-｠￠-￦　-〿぀-ヿ㐀-䶿一-鿿]/.test(ch);
+}
 function nodeGeom(n) {
   const isRoot = !n.parentId;
   const fsBase = isRoot ? 15 : 13;
-  const charW = (isRoot ? 8.5 : 7.5) * (n.font && FONT_WIDTH[n.font] ? FONT_WIDTH[n.font] : 1);
+  const fontMul = (n.font && FONT_WIDTH[n.font]) ? FONT_WIDTH[n.font] : 1;
+  const narrowW = (isRoot ? 8.5 : 7.5) * fontMul;          // 라틴/숫자 평균 글자폭
+  const wideW   = (isRoot ? 16   : 14)  * fontMul;          // 전각(한글 등) 글자폭 — 넉넉히
   const lines = nodeText(n).split('\n');
-  const longest = Math.max(1, ...lines.map(l => l.length));
-  const lineHBase = fsBase + 6;
-  // 텍스트가 차지하는 최소 크기(base px, 미스케일)
-  const contentWbase = Math.max(longest * charW + 32, 60);
-  const contentHbase = lines.length * lineHBase + 12;
+  // 가장 넓은 줄의 실제 폭 추정(글자별 폭 합산)
+  let longestW = 0;
+  lines.forEach(l => {
+    let w = 0;
+    for (const ch of l) w += isWideChar(ch) ? wideW : narrowW;
+    if (w > longestW) longestW = w;
+  });
+  const lineHBase = fsBase + 9;                             // 줄 높이 — 위아래 여유
+  // 텍스트가 차지하는 최소 크기(base px, 미스케일) — 좌우/상하 여백 넉넉하게
+  const contentWbase = Math.max(longestW + 44, 72);
+  const contentHbase = lines.length * lineHBase + 20;
   // 수동 크기(n.w/n.h)가 있으면 사용하되, 텍스트보다 작아지지 않게
   const baseW = n.w ? Math.max(n.w, contentWbase) : contentWbase;
   const baseH = n.h ? Math.max(n.h, contentHbase) : contentHbase;
