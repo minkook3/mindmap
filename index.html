@@ -1192,7 +1192,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function initDefault() {
-  nodes = [{ id: nid(), text: 'Hello', x: 0, y: 0, color: '#e94560', parentId: null }];
+  nodes = [{ id: nid(), text: 'Hello', x: 0, y: 0, color: '#e94560', parentId: null, shape: 'round' }];
   links = [];
   bgColor = DEFAULT_BG; applyBg();
   editingEdge = null;
@@ -1214,7 +1214,7 @@ function addChild(parentId) {
     x: parent.x + Math.cos(angle) * dist,
     y: parent.y + Math.sin(angle) * dist,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    parentId
+    parentId, shape: 'round'
   };
   nodes.push(child);
   recordHistory();
@@ -2500,7 +2500,7 @@ function menuCreateNode() {
   const node = {
     id: nid(), text: '새 노드', x: pos.x, y: pos.y,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    parentId: null, shape: 'rect'
+    parentId: null, shape: 'round'
   };
   nodes.push(node);
   recordHistory();
@@ -2865,7 +2865,7 @@ function genId() {
 
 async function createMap(name) {
   const id = genId();
-  const data = { nodes: [{ id: 'n1', text: name || 'Hello', x: 0, y: 0, color: '#e94560', parentId: null }], links: [], idCounter: 2, name: name || '', updatedAt: new Date().toISOString() };
+  const data = { nodes: [{ id: 'n1', text: name || 'Hello', x: 0, y: 0, color: '#e94560', parentId: null, shape: 'round' }], links: [], idCounter: 2, name: name || '', updatedAt: new Date().toISOString() };
   const sha = await ghPutFile(mapPath(id), data, null, 'feat: create map "' + name + '"');
   return { id, sha };
 }
