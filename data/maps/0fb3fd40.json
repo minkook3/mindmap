@@ -88,7 +88,7 @@
     },
     {
       "id": "n16",
-      "text": "[Eff]Character_1012_Object_Cutin",
+      "text": "[Eff]Character_1012_Object_Cutin\n\n(댓글)준책임님 애니 해주세요~",
       "x": -472.0360827293057,
       "y": 1241.9688257667067,
       "color": "#ffffff",
@@ -106,9 +106,9 @@
     },
     {
       "id": "n20",
-      "text": "[Eff]Character_1014_Skill_Effect",
-      "x": 91.6764416863941,
-      "y": 1255.0019923735038,
+      "text": "[Eff]Character_1012_Skill_Effect\n\n혁민상 개발 붙여주세요~",
+      "x": 431.83116879171087,
+      "y": 1173.0669121218582,
       "color": "#26c6da",
       "parentId": null,
       "shape": "round"
@@ -128,15 +128,6 @@
       "x": -664.1193630486758,
       "y": 1502.8031791983294,
       "color": "#ffd166",
-      "parentId": null,
-      "shape": "round"
-    },
-    {
-      "id": "n24",
-      "text": "[Eff]Character_1015_Skill_Effect",
-      "x": -78.39172574335805,
-      "y": 1438.9553811752858,
-      "color": "#000000",
       "parentId": null,
       "shape": "round"
     },
@@ -161,8 +152,8 @@
     {
       "id": "n29",
       "text": "[Spec]Skill Effect",
-      "x": -27.59155354369466,
-      "y": 1150.211441607029,
+      "x": -32.557315983188346,
+      "y": 1033.5160242789277,
       "color": "#533483",
       "parentId": null,
       "shape": "round"
@@ -177,21 +168,66 @@
       "shape": "round"
     },
     {
-      "id": "n42",
-      "text": "[Dev]Character_1014_Skill_Effect",
-      "x": 295.43475126052954,
-      "y": 1340.3669983545726,
-      "color": "#9c27b0",
-      "parentId": "n29",
-      "shape": "round"
-    },
-    {
       "id": "n47",
       "text": "[Spec]Skill",
       "x": -573.2545262599675,
       "y": 843.0670467625987,
       "color": "#ff00a2",
       "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n49",
+      "text": "[Art]Character_1012\n(캐릭터 컷인, 오브젝트 컷인, 스킬 이펙트 발주 의뢰서)",
+      "x": 482.6867204002379,
+      "y": 1055.2240460254297,
+      "color": "#ff0000",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n53",
+      "text": "[Dev]Character_1012_Skill_Effect -> 기본 기능",
+      "x": 446.0495972245677,
+      "y": 1277.4906622206074,
+      "color": "#7c4dff",
+      "parentId": "n29",
+      "shape": "round"
+    },
+    {
+      "id": "n54",
+      "text": "[Spec]GACHA",
+      "x": -1504.8951390898815,
+      "y": 619.494248075839,
+      "color": "#118ab2",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n55",
+      "text": "[Art]UIGacha\n스토리보드 공유(개발, UI, 이펙트, 애니 등 발주)\n\n댓글) ui 적용 완료했습니다. 모리상 확인해주세요\n댓글)확인했습니다. ui 바꿨고, 이걸로 새로 적용해주세요",
+      "x": -1892.1506496860236,
+      "y": 824.0042217463048,
+      "color": "#3175ff",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n61",
+      "text": "[EFF]UIGacha\n\n참조:[Art]UIGacha\n\n댓글~~~~~",
+      "x": -1231.1286055094931,
+      "y": 796.8775468391054,
+      "color": "#ff00a2",
+      "parentId": "n54",
+      "shape": "round"
+    },
+    {
+      "id": "n62",
+      "text": "[Anim]UIGacha\n\n참조:[Art]UIGacha",
+      "x": -859.5349790974467,
+      "y": 736.09412442886,
+      "color": "#26c6da",
+      "parentId": "n54",
       "shape": "round"
     }
   ],
@@ -217,11 +253,6 @@
       "to": "n20"
     },
     {
-      "id": "n37",
-      "from": "n29",
-      "to": "n24"
-    },
-    {
       "id": "n39",
       "from": "n14",
       "to": "n27"
@@ -230,10 +261,20 @@
       "id": "n40",
       "from": "n21",
       "to": "n27"
+    },
+    {
+      "id": "n52",
+      "from": "n29",
+      "to": "n49"
+    },
+    {
+      "id": "n59",
+      "from": "n54",
+      "to": "n55"
     }
   ],
-  "idCounter": 48,
+  "idCounter": 63,
   "bg": "#1a1a2e",
   "name": "이지형마인드맵",
-  "updatedAt": "2026-06-24T05:50:52.802Z"
+  "updatedAt": "2026-06-24T06:08:38.955Z"
 }
