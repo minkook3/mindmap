@@ -3,8 +3,8 @@
     {
       "id": "n3",
       "text": "(Spec)크리스탈 캐릭터 컷인",
-      "x": -232.19200029061787,
-      "y": 26.71152231287497,
+      "x": -317.97979161099113,
+      "y": 187.78247744500442,
       "color": "#ffffff",
       "parentId": null,
       "shape": "rect"
@@ -12,8 +12,8 @@
     {
       "id": "n4",
       "text": "(Spec)오브젝트 컷인",
-      "x": -60.5253336239512,
-      "y": 25.71152231287497,
+      "x": -79.78381738974927,
+      "y": 188.53324869644058,
       "color": "#c0392b",
       "parentId": null,
       "shape": "rect"
@@ -21,8 +21,8 @@
     {
       "id": "n5",
       "text": "(Spec)스킬",
-      "x": 75.14133304271547,
-      "y": 25.044855646208312,
+      "x": 95.27520243423166,
+      "y": 186.11581077833773,
       "color": "#3175ff",
       "parentId": null,
       "shape": "rect"
@@ -76,11 +76,164 @@
       "y": 146.85706749294235,
       "color": "#ced4da",
       "parentId": "n9"
+    },
+    {
+      "id": "n14",
+      "text": "[Art]Character_1014\n(캐릭터 컷인, 오브젝트 컷인, 스킬 이펙트 발주 의뢰서)",
+      "x": -1454.5299983361597,
+      "y": 1219.8637314822054,
+      "color": "#c0392b",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n16",
+      "text": "[Eff]Character_1012_Object_Cutin",
+      "x": -472.0360827293057,
+      "y": 1241.9688257667067,
+      "color": "#ffffff",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n17",
+      "text": "[Anim]Character_1014_Cutin",
+      "x": -870.7383977008894,
+      "y": 1284.7763030022086,
+      "color": "#ced4da",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n20",
+      "text": "[Eff]Character_1014_Skill_Effect",
+      "x": 91.6764416863941,
+      "y": 1255.0019923735038,
+      "color": "#26c6da",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n21",
+      "text": "[Art]Character_1015\n(캐릭터 컷인, 오브젝트 컷인, 스킬 이펙트 발주 의뢰서)",
+      "x": -1451.618921791312,
+      "y": 1313.200092685007,
+      "color": "#5a66ff",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n22",
+      "text": "[Anim]Character_1015_Cutin",
+      "x": -664.1193630486758,
+      "y": 1502.8031791983294,
+      "color": "#ffd166",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n24",
+      "text": "[Eff]Character_1015_Skill_Effect",
+      "x": -78.39172574335805,
+      "y": 1438.9553811752858,
+      "color": "#000000",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n27",
+      "text": "[Spec]Skill Character",
+      "x": -889.5045561178803,
+      "y": 1149.2303972342222,
+      "color": "#e94560",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n28",
+      "text": "[Spec]Object Cutin",
+      "x": -477.5651821854431,
+      "y": 1131.4317348177967,
+      "color": "#54ef00",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n29",
+      "text": "[Spec]Skill Effect",
+      "x": -27.59155354369466,
+      "y": 1150.211441607029,
+      "color": "#533483",
+      "parentId": null,
+      "shape": "round"
+    },
+    {
+      "id": "n41",
+      "text": "[Art]Character_1014_Cutin",
+      "x": -885.605315842648,
+      "y": 1351.2494136296837,
+      "color": "#533483",
+      "parentId": "n27",
+      "shape": "round"
+    },
+    {
+      "id": "n42",
+      "text": "[Dev]Character_1014_Skill_Effect",
+      "x": 295.43475126052954,
+      "y": 1340.3669983545726,
+      "color": "#9c27b0",
+      "parentId": "n29",
+      "shape": "round"
+    },
+    {
+      "id": "n47",
+      "text": "[Spec]Skill",
+      "x": -573.2545262599675,
+      "y": 843.0670467625987,
+      "color": "#ff00a2",
+      "parentId": null,
+      "shape": "round"
     }
   ],
-  "links": [],
-  "idCounter": 13,
+  "links": [
+    {
+      "id": "n32",
+      "from": "n27",
+      "to": "n17"
+    },
+    {
+      "id": "n33",
+      "from": "n27",
+      "to": "n22"
+    },
+    {
+      "id": "n35",
+      "from": "n28",
+      "to": "n16"
+    },
+    {
+      "id": "n36",
+      "from": "n29",
+      "to": "n20"
+    },
+    {
+      "id": "n37",
+      "from": "n29",
+      "to": "n24"
+    },
+    {
+      "id": "n39",
+      "from": "n14",
+      "to": "n27"
+    },
+    {
+      "id": "n40",
+      "from": "n21",
+      "to": "n27"
+    }
+  ],
+  "idCounter": 48,
   "bg": "#1a1a2e",
   "name": "이지형마인드맵",
-  "updatedAt": "2026-06-23T09:19:14.662Z"
+  "updatedAt": "2026-06-24T05:50:52.802Z"
 }
