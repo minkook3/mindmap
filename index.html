@@ -570,6 +570,7 @@ let isReadOnly = false;
 let legacyReadOnly = false;            // 레거시 압축 공유 링크 = 항상 읽기 전용(토큰 무관)
 let displayLang = 'orig';              // 노드 문구 표시 언어: 'orig'(원문) | 'ko' | 'en' | 'ja' — UI 언어와 무관
 let viewX = 0, viewY = 0, viewScale = 1;
+let lastFitScale = null, lastZoomScale = null;   // 더블탭 줌 사이클 상태(꽉참 스케일 / 확대 스케일)
 let isPanning = false, panStart = null;
 let isDragging = false, dragNodeId = null, dragOffset = null;
 let dragMoved = false;
@@ -709,7 +710,7 @@ Object.assign(I18N.ko, {
   'msg.rectHint':'드래그해서 노드를 선택하세요',
   'msg.dirtyShareHint':'변경 사항이 있습니다 — “☁ 저장” 후 공유하면 최신 내용이 반영됩니다','msg.openFirst':'먼저 “📁 내 맵”에서 맵을 열거나 만든 뒤 공유하세요','msg.mapWord':'맵',
   'msg.presentOn':'발표 모드 — 이동/줌만 가능, ESC(또는 ✕)로 종료',
-  'msg.fitView':'화면에 맞췄습니다',
+  'msg.fitView':'화면에 맞췄습니다','msg.zoomIn':'확대했습니다',
   'st.loading':'불러오는 중…','st.loadFail':'불러오기 실패','st.localIdle':'','st.syncedSuffix':' · 동기화됨','st.saving':'저장 중…','st.savedSuffix':' · 저장됨','st.conflict':'충돌 발생','st.authFail':'인증 실패','st.saveFail':'저장 실패','st.localIdleShort':'','st.dirtySuffix':' · 변경됨(미저장)',
   'cf.conflict':'다른 사람이 이 맵을 먼저 수정했습니다.\n[확인] 최신 버전을 불러오기 (현재 변경 사항은 버려집니다)\n[취소] 그대로 두기','cf.deleteMap':'"{0}" 맵을 삭제할까요? 되돌릴 수 없습니다.','cf.reloadLose':'최신 버전을 불러오면 저장하지 않은 현재 변경 사항은 사라집니다.\n계속할까요?','cf.newClear':'현재 작업을 지우고 새로 시작할까요?',
   'pr.rename':'맵 이름 변경','pr.saveAsNew':'현재 맵을 새 이름으로 저장','pr.newMap':'새 맵 이름','pr.defaultMapName':'새 마인드맵',
@@ -732,7 +733,7 @@ Object.assign(I18N.en, {
   'msg.rectHint':'Drag to select nodes',
   'msg.dirtyShareHint':'You have unsaved changes — save (☁) first so the share reflects the latest','msg.openFirst':'Open or create a map in “📁 My Maps” first, then share','msg.mapWord':'map',
   'msg.presentOn':'Presentation — pan/zoom only, press ESC (or ✕) to exit',
-  'msg.fitView':'Fit to screen',
+  'msg.fitView':'Fit to screen','msg.zoomIn':'Zoomed in',
   'st.loading':'Loading…','st.loadFail':'Load failed','st.localIdle':'','st.syncedSuffix':' · synced','st.saving':'Saving…','st.savedSuffix':' · saved','st.conflict':'Conflict','st.authFail':'Auth failed','st.saveFail':'Save failed','st.localIdleShort':'','st.dirtySuffix':' · changed (unsaved)',
   'cf.conflict':'Someone edited this map first.\n[OK] Load the latest (your current changes will be discarded)\n[Cancel] Keep as is','cf.deleteMap':'Delete map "{0}"? This cannot be undone.','cf.reloadLose':'Loading the latest will discard your unsaved changes.\nContinue?','cf.newClear':'Clear current work and start over?',
   'pr.rename':'Rename map','pr.saveAsNew':'Save current map under a new name','pr.newMap':'New map name','pr.defaultMapName':'New mindmap',
@@ -755,7 +756,7 @@ Object.assign(I18N.ja, {
   'msg.rectHint':'ドラッグしてノードを選択',
   'msg.dirtyShareHint':'未保存の変更があります — "☁ 保存"後に共有すると最新が反映されます','msg.openFirst':'まず "📁 マイマップ" でマップを開くか作成してから共有してください','msg.mapWord':'マップ',
   'msg.presentOn':'プレゼンモード — 移動/ズームのみ、ESC(または✕)で終了',
-  'msg.fitView':'画面に合わせました',
+  'msg.fitView':'画面に合わせました','msg.zoomIn':'拡大しました',
   'st.loading':'読み込み中…','st.loadFail':'読み込み失敗','st.localIdle':'','st.syncedSuffix':' · 同期済み','st.saving':'保存中…','st.savedSuffix':' · 保存済み','st.conflict':'競合発生','st.authFail':'認証失敗','st.saveFail':'保存失敗','st.localIdleShort':'','st.dirtySuffix':' · 変更あり(未保存)',
   'cf.conflict':'他の人がこのマップを先に編集しました。\n[OK] 最新を読み込む (現在の変更は破棄されます)\n[キャンセル] そのままにする','cf.deleteMap':'"{0}" マップを削除しますか？元に戻せません。','cf.reloadLose':'最新を読み込むと未保存の変更は失われます。\n続行しますか？','cf.newClear':'現在の作業を消して新しく始めますか？',
   'pr.rename':'マップ名を変更','pr.saveAsNew':'現在のマップを新しい名前で保存','pr.newMap':'新しいマップ名','pr.defaultMapName':'新しいマインドマップ',
@@ -1271,6 +1272,8 @@ function fitView() {
   viewScale = scale;
   viewX = -cx;   // 경계 박스 중심을 화면 중앙에 정렬
   viewY = -cy;
+  lastFitScale = scale;   // 더블탭 줌 사이클: 현재가 '꽉참' 상태임을 기록
+  lastZoomScale = null;
   render();
 }
 
@@ -1763,14 +1766,40 @@ function updateMarquee(e) {
 // 조건(AND): 300ms 이내 + 40px 이내 + (각 탭이 정지 상태일 때만 호출됨)
 let lastEmptyTapTime = 0, lastEmptyTapPos = null;
 const EMPTY_DBL_MS = 300, EMPTY_DBL_DIST = 40;
+// 스케일이 거의 같은지(부동소수 + 약간의 오차 허용)
+function approxScale(a, b) { return a != null && b != null && Math.abs(a - b) < Math.max(a, b) * 0.02; }
+// 화면상의 한 점(x,y)을 고정한 채 줌 — 휠 줌과 동일한 방식
+function zoomAboutScreen(x, y, newScale) {
+  const svg = document.getElementById('canvas');
+  const r = svg.getBoundingClientRect();
+  const mx = x - r.left - r.width / 2;
+  const my = y - r.top - r.height / 2;
+  viewX -= mx / viewScale; viewY -= my / viewScale;
+  viewScale = Math.max(0.15, Math.min(3, newScale));
+  viewX += mx / viewScale; viewY += my / viewScale;
+  render();
+}
 function emptyDoubleFit(x, y) {
   const now = Date.now();
   if (lastEmptyTapPos &&
       (now - lastEmptyTapTime) < EMPTY_DBL_MS &&
       Math.hypot(x - lastEmptyTapPos.x, y - lastEmptyTapPos.y) < EMPTY_DBL_DIST) {
     lastEmptyTapTime = 0; lastEmptyTapPos = null;
-    fitView();
-    showToast(t('msg.fitView'));
+    // 사이클: 기본 → (더블탭) 꽉참 → (더블탭) 확대 → (더블탭) 다시 꽉참
+    if (approxScale(viewScale, lastFitScale)) {
+      // 꽉참 상태(수동 줌 안 함, 화면이동은 무관) → 탭 지점 중심으로 확대
+      zoomAboutScreen(x, y, Math.min(3, Math.max(viewScale * 2.5, viewScale + 0.4)));
+      lastZoomScale = viewScale;          // 클램프 후 실제 확대 스케일 기록
+      showToast(t('msg.zoomIn'));
+    } else if (approxScale(viewScale, lastZoomScale)) {
+      // 확대 상태 → 다시 꽉참으로 복귀
+      fitView();
+      showToast(t('msg.fitView'));
+    } else {
+      // 기본/수동으로 줌이 바뀐 상태 → 화면 맞춤
+      fitView();
+      showToast(t('msg.fitView'));
+    }
     return true;
   }
   lastEmptyTapTime = now; lastEmptyTapPos = { x, y };
