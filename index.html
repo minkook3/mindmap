@@ -1765,7 +1765,7 @@ function updateMarquee(e) {
 // ── 빈 공간 더블탭/더블클릭 → 화면 맞춤(fitView) ──
 // 조건(AND): 300ms 이내 + 40px 이내 + (각 탭이 정지 상태일 때만 호출됨)
 let lastEmptyTapTime = 0, lastEmptyTapPos = null;
-const EMPTY_DBL_MS = 300, EMPTY_DBL_DIST = 40;
+const EMPTY_DBL_MS = 400, EMPTY_DBL_DIST = 60;   // 더블탭 인식: 간격(ms)·두 탭 거리(px) — 손가락 터치에 맞게 관대하게
 // 스케일이 거의 같은지(부동소수 + 약간의 오차 허용)
 function approxScale(a, b) { return a != null && b != null && Math.abs(a - b) < Math.max(a, b) * 0.02; }
 // 화면상의 한 점(x,y)을 고정한 채 줌 — 휠 줌과 동일한 방식
